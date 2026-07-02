@@ -42,10 +42,10 @@ public class PlayerMovement : MonoBehaviour
             _moveDirection = inputDirection;
         }
 
-        if (attack.action.WasPressedThisFrame())
-        {
-            player_Combat.Attack();
-        }
+       // if (attack.action.WasPressedThisFrame())
+       // {
+        //    player_Combat.Attack();
+       // }
     }
 
     private void FixedUpdate()

@@ -1,54 +1,30 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+
 public class Player_Combat : MonoBehaviour
 {
     public Animator anim;
     public PlayerTargeting playerTargeting;
     public bool isAttacking { get; private set; }
     public PlayerMovement playerMovement;
-    private float timer;
+
     private GameObject attackTarget;
     private bool movingToAttack;
-    private bool waitingForCooldown;
+    private Skill currentSkill;
+    private PlayerSkillManager skillManager;
+
+    private void Awake()
+    {
+        skillManager = GetComponent<PlayerSkillManager>();
+    }
 
     private void Update()
     {
-        if (timer > 0)
-        {
-            timer -= Time.deltaTime;
-        }
-
         if (movingToAttack)
         {
             MoveToTargetAndAttack();
         }
-
-        if (waitingForCooldown)
-        {
-            if (playerTargeting.currentTarget == null)
-            {
-                waitingForCooldown = false;
-                return;
-            }
-
-            float distance = Vector2.Distance(
-                transform.position,
-                playerTargeting.currentTarget.transform.position);
-
-            if (distance > StatsManager.Instance.attackRange)
-            {
-                waitingForCooldown = false;
-                return;
-            }
-
-            if (timer <= 0)
-            {
-                waitingForCooldown = false;
-                ExecuteAttack();
-            }
-        }
     }
+
     public void CancelMoveToAttack()
     {
         movingToAttack = false;
@@ -61,11 +37,7 @@ public class Player_Combat : MonoBehaviour
     {
         if (playerTargeting.currentTarget == null)
         {
-            movingToAttack = false;
-
-            playerMovement.autoMoving = false;
-            playerMovement.CancelAutoMove();
-
+            CancelMoveToAttack();
             return;
         }
 
@@ -73,32 +45,21 @@ public class Player_Combat : MonoBehaviour
             transform.position,
             playerTargeting.currentTarget.transform.position);
 
-        if (distance <= StatsManager.Instance.attackRange)
+        if (distance <= currentSkill.range)
         {
-            movingToAttack = false;
-
-            playerMovement.autoMoving = false;
-            playerMovement.CancelAutoMove();
-
-            if (timer <= 0)
-            {
-                ExecuteAttack();
-            }
-            else
-            {
-                waitingForCooldown = true;
-            }
-
+            CancelMoveToAttack();
+            ExecuteSkill();
             return;
         }
 
-    playerMovement.MoveTo(
-        playerTargeting.currentTarget.transform.position);
+        playerMovement.MoveTo(
+            playerTargeting.currentTarget.transform.position);
     }
 
     private void FaceTarget()
     {
         float targetX = playerTargeting.currentTarget.transform.position.x;
+
         if ((targetX > transform.position.x && transform.localScale.x < 0) ||
             (targetX < transform.position.x && transform.localScale.x > 0))
         {
@@ -108,20 +69,33 @@ public class Player_Combat : MonoBehaviour
         }
     }
 
-    private void ExecuteAttack()
+    private void ExecuteSkill()
     {
         attackTarget = playerTargeting.currentTarget;
 
         FaceTarget();
 
-        isAttacking = true;
-        anim.SetBool("isAttacking", true);
+        skillManager.StartCooldown(currentSkill);
 
-        timer = StatsManager.Instance.attackcooldown;
+        isAttacking = true;
+
+        anim.SetTrigger(currentSkill.animationTrigger);
     }
 
-    public void Attack()
+    public void UseSkill(Skill skill)
     {
+        // Não pode trocar durante a animação
+        if (isAttacking)
+            return;
+
+        // Pode trocar enquanto ainda está caminhando
+        if (movingToAttack)
+        {
+            CancelMoveToAttack();
+        }
+
+        currentSkill = skill;
+
         if (playerTargeting.currentTarget == null)
             return;
 
@@ -129,24 +103,22 @@ public class Player_Combat : MonoBehaviour
             transform.position,
             playerTargeting.currentTarget.transform.position);
 
-        if (distance > StatsManager.Instance.attackRange)
+        if (distance > currentSkill.range)
         {
             movingToAttack = true;
             playerMovement.autoMoving = true;
             return;
         }
 
-        if (timer <= 0)
-        {
-            ExecuteAttack();
-        }
-        else
-        {
-            waitingForCooldown = true;
-        }
+        ExecuteSkill();
     }
 
-    public void DealDamage()
+    public void ExecuteSkillEffect()
+    {
+        currentSkill.ExecuteEffect(this);
+    }
+
+    public void DealDamageToTarget()
     {
         if (attackTarget == null)
             return;
@@ -157,16 +129,17 @@ public class Player_Combat : MonoBehaviour
         if (enemyHealth == null)
             return;
 
-        int damage = StatsManager.Instance.damage;
+        int damage = Mathf.RoundToInt(
+            StatsManager.Instance.damage * currentSkill.damageMultiplier);
 
-        bool critical = Random.Range(0f, 100f) <
-                        StatsManager.Instance.criticalChance;
+        bool critical =
+            Random.Range(0f, 100f) <
+            StatsManager.Instance.criticalChance;
 
         if (critical)
         {
             damage = Mathf.RoundToInt(
-                damage * (1f + StatsManager.Instance.criticalDamage / 100f)
-            );
+                damage * (1f + StatsManager.Instance.criticalDamage / 100f));
         }
 
         enemyHealth.ChangeHealth(-damage, critical);
@@ -174,7 +147,6 @@ public class Player_Combat : MonoBehaviour
 
     public void FinishAttacking()
     {
-        isAttacking = false; // <-- libera o flip de novo
-        anim.SetBool("isAttacking", false);
+        isAttacking = false;
     }
 }

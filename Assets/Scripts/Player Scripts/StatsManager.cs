@@ -1,9 +1,6 @@
 using UnityEngine;
 using System;
 
-// NOVO: garante que o Awake deste script rode antes de qualquer outro script
-// com ordem padrão (como o StatsUI), evitando que StatsManager.Instance
-// ainda esteja null quando outros scripts tentam se inscrever no evento.
 [DefaultExecutionOrder(-100)]
 public class StatsManager : MonoBehaviour
 {
@@ -18,8 +15,6 @@ public class StatsManager : MonoBehaviour
 
     [Header("Combat Stats")]
     public int damage;
-    public float attackRange;
-    public float attackcooldown;
 
     [Header("Movement Stats")]
     public int moveSpeed;

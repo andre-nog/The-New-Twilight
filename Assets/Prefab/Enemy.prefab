@@ -298,8 +298,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_Health
   expReward: 3
-  maxHealth: 10
-  currentHealth: 10
+  maxHealth: 200
+  currentHealth: 200
   healthSlider: {fileID: 4421677304385359570}
 --- !u!114 &7427589120846045355
 MonoBehaviour:
