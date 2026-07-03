@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b9d037d5e3373c419bd25d48bb3e30a, type: 3}
+  m_Name: Stomp
+  m_EditorClassIdentifier: Assembly-CSharp::StompSkill
+  skillName: Stomp
+  icon: {fileID: 0}
+  requiresTarget: 0
+  cooldown: 0
+  range: 0
+  manaCost: 0
+  damageMultiplier: 1
+  hitVFX: {fileID: 8523588817701343864, guid: c7cae6474a7e11f48b74c22a9496dedc, type: 3}
+  hitVFXOffset: {x: 0, y: 0, z: 0}
+  animationTrigger: PowerStrike
+  radius: 5

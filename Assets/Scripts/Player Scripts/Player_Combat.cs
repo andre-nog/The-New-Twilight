@@ -12,6 +12,10 @@ public class Player_Combat : MonoBehaviour
     private Skill currentSkill;
     private PlayerSkillManager skillManager;
 
+    [SerializeField]
+    private LayerMask enemyLayer;
+
+
     private void Awake()
     {
         skillManager = GetComponent<PlayerSkillManager>();
@@ -68,12 +72,13 @@ public class Player_Combat : MonoBehaviour
             transform.localScale = scale;
         }
     }
-
     private void ExecuteSkill()
     {
-        attackTarget = playerTargeting.currentTarget;
-
-        FaceTarget();
+        if (currentSkill.requiresTarget)
+        {
+            attackTarget = playerTargeting.currentTarget;
+            FaceTarget();
+        }
 
         skillManager.StartCooldown(currentSkill);
 
@@ -81,7 +86,6 @@ public class Player_Combat : MonoBehaviour
 
         anim.SetTrigger(currentSkill.animationTrigger);
     }
-
     public void UseSkill(Skill skill)
     {
         // Não pode trocar durante a animação
@@ -95,6 +99,13 @@ public class Player_Combat : MonoBehaviour
         }
 
         currentSkill = skill;
+
+        // Skills que não precisam de alvo (ex.: War Stomp)
+        if (!currentSkill.requiresTarget)
+        {
+            ExecuteSkill();
+            return;
+        }
 
         if (playerTargeting.currentTarget == null)
             return;
@@ -113,22 +124,8 @@ public class Player_Combat : MonoBehaviour
         ExecuteSkill();
     }
 
-    public void ExecuteSkillEffect()
+    private void DealDamage(Enemy_Health enemyHealth)
     {
-        currentSkill.ExecuteEffect(this);
-    }
-
-    public void DealDamageToTarget()
-    {
-        if (attackTarget == null)
-            return;
-
-        Enemy_Health enemyHealth =
-            attackTarget.GetComponent<Enemy_Health>();
-
-        if (enemyHealth == null)
-            return;
-
         int damage = Mathf.RoundToInt(
             StatsManager.Instance.damage * currentSkill.damageMultiplier);
 
@@ -143,19 +140,55 @@ public class Player_Combat : MonoBehaviour
         }
 
         enemyHealth.ChangeHealth(-damage, critical);
-        SpawnHitVFX();
     }
-    private void SpawnHitVFX()
+    public void DealAreaDamage(float radius)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(
+            transform.position,
+            radius,
+            enemyLayer);
+
+        foreach (Collider2D hit in hits)
+        {
+            Enemy_Health enemyHealth = hit.GetComponent<Enemy_Health>();
+
+            if (enemyHealth == null)
+                continue;
+
+            DealDamage(enemyHealth);
+        }
+
+        SpawnHitVFX(transform.position);
+    }
+    public void ExecuteSkillEffect()
+    {
+        currentSkill.ExecuteEffect(this);
+    }
+    public void DealDamageToTarget()
+    {
+        if (attackTarget == null)
+            return;
+
+        Enemy_Health enemyHealth =
+            attackTarget.GetComponent<Enemy_Health>();
+
+        if (enemyHealth == null)
+            return;
+
+        DealDamage(enemyHealth);
+
+        SpawnHitVFX(attackTarget.transform.position);
+    }
+    private void SpawnHitVFX(Vector3 position)
     {
         if (currentSkill.hitVFX == null)
             return;
 
         Instantiate(
             currentSkill.hitVFX,
-            attackTarget.transform.position + currentSkill.hitVFXOffset,
+            position + currentSkill.hitVFXOffset,
             Quaternion.identity);
     }
-
     public void FinishAttacking()
     {
         isAttacking = false;

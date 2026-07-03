@@ -7,6 +7,7 @@ public abstract class Skill : ScriptableObject
     public Sprite icon;
 
     [Header("Gameplay")]
+    public bool requiresTarget = true;
     public float cooldown;
     public float range;
     public int manaCost;
