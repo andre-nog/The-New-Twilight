@@ -16,9 +16,16 @@ public class Item : MonoBehaviour
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
+
     private void Start()
     {
         inventoryManager = InventoryManager.Instance;
+
+        // Atualiza o sprite caso o ItemSO tenha sido atribuído pelo Inspector
+        if (item != null)
+        {
+            spriteRenderer.sprite = item.itemSprite;
+        }
 
         canBePickedUp = false;
         Invoke(nameof(EnablePickup), 0.3f);
@@ -38,7 +45,7 @@ public class Item : MonoBehaviour
     {
         item = newItem;
 
-        if (spriteRenderer != null)
+        if (spriteRenderer != null && item != null)
         {
             spriteRenderer.sprite = item.itemSprite;
         }

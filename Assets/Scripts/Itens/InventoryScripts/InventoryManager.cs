@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class InventoryManager : MonoBehaviour
+public class InventoryManager : MonoBehaviour, ICancelable
 {
     public static InventoryManager Instance;
     public CanvasGroup inventoryCanvas;
@@ -37,18 +37,34 @@ public class InventoryManager : MonoBehaviour
         inventoryCanvas.alpha = 0;
         inventoryCanvas.interactable = false;
         inventoryCanvas.blocksRaycasts = false;
+        CancelManager.Instance.Register(this);
     }
 
     private void Update()
     {
         if (toggleInventory.action.WasPressedThisFrame())
         {
-            menuActivated = !menuActivated;
-
-            inventoryCanvas.alpha = menuActivated ? 1 : 0;
-            inventoryCanvas.interactable = menuActivated;
-            inventoryCanvas.blocksRaycasts = menuActivated;
+            if (menuActivated)
+                CloseInventory();
+            else
+                OpenInventory();
         }
+    }
+    public void OpenInventory()
+    {
+        menuActivated = true;
+
+        inventoryCanvas.alpha = 1;
+        inventoryCanvas.interactable = true;
+        inventoryCanvas.blocksRaycasts = true;
+    }
+    public void CloseInventory()
+    {
+        menuActivated = false;
+
+        inventoryCanvas.alpha = 0;
+        inventoryCanvas.interactable = false;
+        inventoryCanvas.blocksRaycasts = false;
     }
 
     public int AddItem(ItemSO item, int quantity)
@@ -123,4 +139,21 @@ public class InventoryManager : MonoBehaviour
         // Remove uma unidade do inventário
         slot.ConsumeOneItem();
     }
+    private void OnDestroy()
+    {
+        if (CancelManager.Instance != null)
+            CancelManager.Instance.Unregister(this);
+    }
+
+    public bool CanCancel()
+    {
+        return menuActivated;
+    }
+
+    public void Cancel()
+    {
+        CloseInventory();
+    }
+
+    public int Priority => 100;
 }

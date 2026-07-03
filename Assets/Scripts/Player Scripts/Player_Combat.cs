@@ -143,6 +143,17 @@ public class Player_Combat : MonoBehaviour
         }
 
         enemyHealth.ChangeHealth(-damage, critical);
+        SpawnHitVFX();
+    }
+    private void SpawnHitVFX()
+    {
+        if (currentSkill.hitVFX == null)
+            return;
+
+        Instantiate(
+            currentSkill.hitVFX,
+            attackTarget.transform.position + currentSkill.hitVFXOffset,
+            Quaternion.identity);
     }
 
     public void FinishAttacking()

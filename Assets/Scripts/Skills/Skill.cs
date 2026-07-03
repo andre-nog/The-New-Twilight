@@ -11,6 +11,10 @@ public abstract class Skill : ScriptableObject
     public float range;
     public int manaCost;
     public float damageMultiplier = 1f;
+    
+    [Header("Visual Effects")]
+    public GameObject hitVFX;
+    public Vector3 hitVFXOffset;
 
     [Header("Animation")]
     public string animationTrigger;

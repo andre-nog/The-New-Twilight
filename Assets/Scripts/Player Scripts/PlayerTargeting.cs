@@ -1,70 +1,84 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Collections.Generic;
 
-public class PlayerTargeting : MonoBehaviour
+public class PlayerTargeting : MonoBehaviour, ICancelable
 {
     public InputActionReference selectTarget;
     public InputActionReference targetNext;
+
+    [SerializeField] private LayerMask enemyLayerMask;
+
     public GameObject currentTarget;
+
     private Color originalColor;
+
+    private void OnEnable()
+    {
+        selectTarget.action.Enable();
+        targetNext.action.Enable();
+    }
+
+    private void OnDisable()
+    {
+        selectTarget.action.Disable();
+        targetNext.action.Disable();
+    }
+
+    private void Start()
+    {
+        CancelManager.Instance.Register(this);
+    }
+
+    private void OnDestroy()
+    {
+        if (CancelManager.Instance != null)
+            CancelManager.Instance.Unregister(this);
+    }
 
     private void Update()
     {
         if (selectTarget.action.WasPressedThisFrame())
-        {
             CheckEnemyClick();
-        }
 
         if (targetNext.action.WasPressedThisFrame())
-        {
             SelectNextEnemy();
-        }
     }
-
-    [SerializeField] private LayerMask enemyLayerMask;
 
     private void CheckEnemyClick()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(
             Mouse.current.position.ReadValue());
 
-        // ALTERADO: OverlapPoint devolve só 1 collider e a escolha entre
-        // sobrepostos não tem nenhuma relação com sortingOrder (física e
-        // rendering são sistemas independentes). OverlapPointAll pega TODOS
-        // os colliders no ponto, daí escolhemos manualmente o de cima.
-        Collider2D[] hits = Physics2D.OverlapPointAll(mousePos, enemyLayerMask); // ALTERADO
+        Collider2D[] hits = Physics2D.OverlapPointAll(mousePos, enemyLayerMask);
 
-        if (hits.Length == 0) // ALTERADO
+        if (hits.Length == 0)
             return;
 
-        GameObject bestTarget = null; // NOVO
-        int bestSortingOrder = int.MinValue; // NOVO
+        GameObject bestTarget = null;
+        int bestSortingOrder = int.MinValue;
 
-        foreach (Collider2D hit in hits) // NOVO
+        foreach (Collider2D hit in hits)
         {
             GameObject hitObject = hit.attachedRigidbody != null
                 ? hit.attachedRigidbody.gameObject
                 : hit.gameObject;
 
             if (!hitObject.CompareTag("Enemy"))
-                continue; // NOVO
+                continue;
 
-            SpriteRenderer sr = hitObject.GetComponent<SpriteRenderer>(); // NOVO
-            int sortingOrder = sr != null ? sr.sortingOrder : int.MinValue; // NOVO
+            SpriteRenderer sr = hitObject.GetComponent<SpriteRenderer>();
+            int sortingOrder = sr != null ? sr.sortingOrder : int.MinValue;
 
-            // NOVO: maior sortingOrder = desenhado por cima = visualmente na frente
-            if (sortingOrder > bestSortingOrder) // NOVO
+            if (sortingOrder > bestSortingOrder)
             {
-                bestSortingOrder = sortingOrder; // NOVO
-                bestTarget = hitObject; // NOVO
+                bestSortingOrder = sortingOrder;
+                bestTarget = hitObject;
             }
         }
 
-        if (bestTarget != null) // ALTERADO
-        {
-            SelectTarget(bestTarget); // ALTERADO
-        }
+        if (bestTarget != null)
+            SelectTarget(bestTarget);
     }
 
     private void SelectTarget(GameObject target)
@@ -72,15 +86,7 @@ public class PlayerTargeting : MonoBehaviour
         if (target == currentTarget)
             return;
 
-        if (currentTarget != null)
-        {
-            SpriteRenderer oldSr = currentTarget.GetComponent<SpriteRenderer>();
-
-            if (oldSr != null)
-            {
-                oldSr.color = originalColor;
-            }
-        }
+        ClearTarget();
 
         currentTarget = target;
 
@@ -91,8 +97,6 @@ public class PlayerTargeting : MonoBehaviour
             originalColor = sr.color;
             sr.color = Color.red;
         }
-
-        Debug.Log("Inimigo selecionado: " + target.name);
     }
 
     private void SelectNextEnemy()
@@ -106,20 +110,20 @@ public class PlayerTargeting : MonoBehaviour
 
         foreach (GameObject enemy in enemies)
         {
-            Vector3 viewportPos =
-                Camera.main.WorldToViewportPoint(enemy.transform.position);
+            // ALTERADO - trocado SpriteRenderer.bounds por Collider2D.bounds.
+            // Isso alinha a checagem de visibilidade com a mesma área usada pra
+            // clicar no inimigo (CheckEnemyClick usa Physics2D.OverlapPointAll no
+            // collider). Sprite bounds pode incluir bastante espaço transparente
+            // nas bordas, então o collider costuma ser mais fiel à área "real"
+            // do inimigo e evita selecionar algo que só tem pixel transparente na tela.
+            Collider2D col = enemy.GetComponent<Collider2D>();
 
-            bool isVisible =
-                viewportPos.x >= 0 &&
-                viewportPos.x <= 1 &&
-                viewportPos.y >= 0 &&
-                viewportPos.y <= 1 &&
-                viewportPos.z > 0;
+            bool isVisible = col != null
+                ? IsBoundsVisible(col.bounds, Camera.main)
+                : IsPointVisible(enemy.transform.position); // fallback caso não tenha Collider2D
 
             if (isVisible)
-            {
                 visibleEnemies.Add(enemy);
-            }
         }
 
         if (visibleEnemies.Count == 0)
@@ -148,4 +152,84 @@ public class PlayerTargeting : MonoBehaviour
 
         SelectTarget(visibleEnemies[nextIndex]);
     }
+
+    // NOVO - projeta os 4 cantos da bounding box do sprite pro espaço de viewport
+    // e testa se o retângulo resultante sobrepõe o retângulo da tela [0,1]x[0,1].
+    // Diferente de TestPlanesAABB, esse teste não tem falso positivo: é uma
+    // interseção de retângulos de fato, válida para câmera ortográfica sem rotação.
+    private bool IsBoundsVisible(Bounds bounds, Camera cam)
+    {
+        Vector3 min = bounds.min;
+        Vector3 max = bounds.max;
+        float z = bounds.center.z;
+
+        Vector3[] corners =
+        {
+            new Vector3(min.x, min.y, z),
+            new Vector3(max.x, min.y, z),
+            new Vector3(min.x, max.y, z),
+            new Vector3(max.x, max.y, z)
+        };
+
+        float minX = float.MaxValue, maxX = float.MinValue;
+        float minY = float.MaxValue, maxY = float.MinValue;
+        bool anyInFront = false;
+
+        foreach (Vector3 corner in corners)
+        {
+            Vector3 vp = cam.WorldToViewportPoint(corner);
+
+            if (vp.z > 0f)
+                anyInFront = true;
+
+            minX = Mathf.Min(minX, vp.x);
+            maxX = Mathf.Max(maxX, vp.x);
+            minY = Mathf.Min(minY, vp.y);
+            maxY = Mathf.Max(maxY, vp.y);
+        }
+
+        if (!anyInFront)
+            return false;
+
+        // Sobreposição de retângulos: [minX,maxX] com [0,1] E [minY,maxY] com [0,1]
+        return maxX >= 0f && minX <= 1f && maxY >= 0f && minY <= 1f;
+    }
+
+    // NOVO - fallback simples baseado em ponto, usado só quando o inimigo
+    // não tem SpriteRenderer (ex: um objeto lógico sem visual próprio).
+    private bool IsPointVisible(Vector3 worldPos)
+    {
+        Vector3 viewportPos = Camera.main.WorldToViewportPoint(worldPos);
+
+        return viewportPos.x >= 0 &&
+               viewportPos.x <= 1 &&
+               viewportPos.y >= 0 &&
+               viewportPos.y <= 1 &&
+               viewportPos.z > 0;
+    }
+
+    public void ClearTarget()
+    {
+        if (currentTarget == null)
+            return;
+
+        SpriteRenderer sr = currentTarget.GetComponent<SpriteRenderer>();
+
+        if (sr != null)
+            sr.color = originalColor;
+
+        currentTarget = null;
+    }
+
+    public bool CanCancel()
+    {
+        return currentTarget != null;
+    }
+
+    public void Cancel()
+    {
+        ClearTarget();
+    }
+
+    public int Priority => 10;
 }
