@@ -6,19 +6,32 @@ public class Player_Combat : MonoBehaviour
     public PlayerTargeting playerTargeting;
     public bool isAttacking { get; private set; }
     public PlayerMovement playerMovement;
+    public ResourceManager ResourceManager => resourceManager;
 
     private GameObject attackTarget;
     private bool movingToAttack;
     private Skill currentSkill;
     private PlayerSkillManager skillManager;
+    private ResourceManager resourceManager;
+    private float damageMultiplierBonus = 1f;
+
+    [SerializeField]
+    private Passive[] passives;
 
     [SerializeField]
     private LayerMask enemyLayer;
 
+    [SerializeField]
+    private bool showDebugRadius = true;
+
+    [SerializeField]
+    private float debugRadius = 2.5f;
+    
 
     private void Awake()
     {
         skillManager = GetComponent<PlayerSkillManager>();
+        resourceManager = GetComponent<ResourceManager>();
     }
 
     private void Update()
@@ -80,11 +93,32 @@ public class Player_Combat : MonoBehaviour
             FaceTarget();
         }
 
+        if (currentSkill.momentumCost > 0)
+        {
+            resourceManager.SpendMomentum(currentSkill.momentumCost);
+        }
+
         skillManager.StartCooldown(currentSkill);
 
         isAttacking = true;
 
+        if (currentSkill.lockMovementDuringCast)
+        {
+            playerMovement.SetMovementLocked(true);
+        }
+
         anim.SetTrigger(currentSkill.animationTrigger);
+    }
+    private float GetPassiveDamageMultiplier()
+    {
+        float multiplier = 1f;
+
+        foreach (Passive passive in passives)
+        {
+            multiplier *= passive.ModifyDamageMultiplier(this, currentSkill);
+        }
+
+        return multiplier;
     }
     public void UseSkill(Skill skill)
     {
@@ -98,9 +132,13 @@ public class Player_Combat : MonoBehaviour
             CancelMoveToAttack();
         }
 
+        // Verifica se há Momentum suficiente
+        if (!resourceManager.HasMomentum(skill.momentumCost))
+            return;
+
         currentSkill = skill;
 
-        // Skills que não precisam de alvo (ex.: War Stomp)
+        // Skills que não precisam de alvo (ex.: Stomp)
         if (!currentSkill.requiresTarget)
         {
             ExecuteSkill();
@@ -127,7 +165,10 @@ public class Player_Combat : MonoBehaviour
     private void DealDamage(Enemy_Health enemyHealth)
     {
         int damage = Mathf.RoundToInt(
-            StatsManager.Instance.damage * currentSkill.damageMultiplier);
+        StatsManager.Instance.damage *
+        currentSkill.damageMultiplier *
+        damageMultiplierBonus *
+        GetPassiveDamageMultiplier());
 
         bool critical =
             Random.Range(0f, 100f) <
@@ -163,6 +204,28 @@ public class Player_Combat : MonoBehaviour
     public void ExecuteSkillEffect()
     {
         currentSkill.ExecuteEffect(this);
+
+        if (currentSkill.momentumGenerated > 0)
+        {
+            resourceManager.AddMomentum(currentSkill.momentumGenerated);
+        }
+    }
+    public void ReleaseMovement()
+    {
+        if (currentSkill.lockMovementDuringCast)
+        {
+            playerMovement.SetMovementLocked(false);
+        }
+    }
+
+    public void SetDamageMultiplierBonus(float multiplier)
+    {
+        damageMultiplierBonus = multiplier;
+    }
+
+    public void ResetDamageMultiplierBonus()
+    {
+        damageMultiplierBonus = 1f;
     }
     public void DealDamageToTarget()
     {
@@ -192,5 +255,13 @@ public class Player_Combat : MonoBehaviour
     public void FinishAttacking()
     {
         isAttacking = false;
+    }
+    private void OnDrawGizmosSelected()
+    {
+        if (!showDebugRadius)
+            return;
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, debugRadius);
     }
 }

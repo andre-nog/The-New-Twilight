@@ -13,13 +13,18 @@ MonoBehaviour:
   m_Name: Stomp
   m_EditorClassIdentifier: Assembly-CSharp::StompSkill
   skillName: Stomp
+  skillType: 2
   icon: {fileID: 0}
   requiresTarget: 0
+  lockMovementDuringCast: 1
   cooldown: 0
   range: 0
   manaCost: 0
-  damageMultiplier: 1
+  damageMultiplier: 1.5
+  momentumGenerated: 0
+  momentumCost: 0
   hitVFX: {fileID: 8523588817701343864, guid: c7cae6474a7e11f48b74c22a9496dedc, type: 3}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: PowerStrike
-  radius: 5
+  radius: 2.5
+  momentumScaling: 0.5

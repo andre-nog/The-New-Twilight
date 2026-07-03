@@ -4,14 +4,20 @@ public abstract class Skill : ScriptableObject
 {
     [Header("Info")]
     public string skillName;
+    public SkillType skillType;
     public Sprite icon;
 
     [Header("Gameplay")]
     public bool requiresTarget = true;
+    public bool lockMovementDuringCast = false;
     public float cooldown;
     public float range;
     public int manaCost;
     public float damageMultiplier = 1f;
+
+    [Header("Momentum")]
+    public int momentumGenerated;
+    public int momentumCost;
     
     [Header("Visual Effects")]
     public GameObject hitVFX;

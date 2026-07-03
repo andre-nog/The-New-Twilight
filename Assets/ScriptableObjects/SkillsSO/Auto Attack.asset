@@ -13,9 +13,16 @@ MonoBehaviour:
   m_Name: Auto Attack
   m_EditorClassIdentifier: Assembly-CSharp::AutoAttackSkill
   skillName: Auto Attack
+  skillType: 0
   icon: {fileID: 0}
+  requiresTarget: 1
+  lockMovementDuringCast: 1
   cooldown: 1.5
   range: 1.2
   manaCost: 0
   damageMultiplier: 1
+  momentumGenerated: 1
+  momentumCost: 0
+  hitVFX: {fileID: 0}
+  hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: AutoAttack

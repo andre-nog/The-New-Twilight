@@ -13,11 +13,16 @@ MonoBehaviour:
   m_Name: Power Strike
   m_EditorClassIdentifier: Assembly-CSharp::PowerStrikeSkill
   skillName: Power Strike
+  skillType: 1
   icon: {fileID: 0}
-  cooldown: 5
+  requiresTarget: 1
+  lockMovementDuringCast: 1
+  cooldown: 4
   range: 1.2
   manaCost: 0
   damageMultiplier: 2.5
+  momentumGenerated: 2
+  momentumCost: 0
   hitVFX: {fileID: 133553090695271686, guid: cf3d17977cbce2f4ebba086031033c3f, type: 3}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: PowerStrike

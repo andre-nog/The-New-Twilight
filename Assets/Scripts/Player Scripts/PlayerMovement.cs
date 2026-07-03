@@ -19,6 +19,7 @@ public class PlayerMovement : MonoBehaviour
 
     private NavMeshPath currentPath;
     private int currentCorner;
+    private bool movementLocked;
 
     private void Start()
     {
@@ -28,6 +29,12 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         Vector2 inputDirection = move.action.ReadValue<Vector2>();
+
+        if (movementLocked)
+        {
+            _moveDirection = Vector2.zero;
+            return;
+        }
 
         if (autoMoving)
         {
@@ -41,15 +48,16 @@ public class PlayerMovement : MonoBehaviour
         {
             _moveDirection = inputDirection;
         }
-
-       // if (attack.action.WasPressedThisFrame())
-       // {
-        //    player_Combat.Attack();
-       // }
     }
 
     private void FixedUpdate()
     {
+        if (movementLocked)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
         if (!autoMoving)
         {
             rb.linearVelocity = _moveDirection * StatsManager.Instance.moveSpeed;
@@ -140,5 +148,15 @@ public class PlayerMovement : MonoBehaviour
     public void SetMoveDirection(Vector2 direction)
     {
         _moveDirection = direction;
+    }
+
+    public void SetMovementLocked(bool locked)
+    {
+        movementLocked = locked;
+
+        if (locked)
+        {
+            StopMoving();
+        }
     }
 }
