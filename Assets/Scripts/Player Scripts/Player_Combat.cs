@@ -52,7 +52,7 @@ public class Player_Combat : MonoBehaviour
 
     private void MoveToTargetAndAttack()
     {
-        if (playerTargeting.currentTarget == null)
+        if (attackTarget == null)
         {
             CancelMoveToAttack();
             return;
@@ -60,7 +60,7 @@ public class Player_Combat : MonoBehaviour
 
         float distance = Vector2.Distance(
             transform.position,
-            playerTargeting.currentTarget.transform.position);
+            attackTarget.transform.position);
 
         if (distance <= currentSkill.range)
         {
@@ -70,12 +70,12 @@ public class Player_Combat : MonoBehaviour
         }
 
         playerMovement.MoveTo(
-            playerTargeting.currentTarget.transform.position);
+            attackTarget.transform.position);
     }
 
-    private void FaceTarget()
+    private void FaceTarget(GameObject target)
     {
-        float targetX = playerTargeting.currentTarget.transform.position.x;
+        float targetX = target.transform.position.x;
 
         if ((targetX > transform.position.x && transform.localScale.x < 0) ||
             (targetX < transform.position.x && transform.localScale.x > 0))
@@ -87,16 +87,20 @@ public class Player_Combat : MonoBehaviour
     }
     private void ExecuteSkill()
     {
+        if (currentSkill == null)
+            return;
+
         if (currentSkill.requiresTarget)
         {
-            attackTarget = playerTargeting.currentTarget;
-            FaceTarget();
+            if (attackTarget == null)
+                return;
+
+            FaceTarget(attackTarget);
         }
 
-        if (currentSkill.momentumCost > 0)
-        {
-            resourceManager.SpendMomentum(currentSkill.momentumCost);
-        }
+        if (currentSkill.momentumCost > 0 &&
+            !resourceManager.SpendMomentum(currentSkill.momentumCost))
+            return;
 
         skillManager.StartCooldown(currentSkill);
 
@@ -115,6 +119,9 @@ public class Player_Combat : MonoBehaviour
 
         foreach (Passive passive in passives)
         {
+            if (passive == null)
+                continue;
+
             multiplier *= passive.ModifyDamageMultiplier(this, currentSkill);
         }
 
@@ -122,6 +129,9 @@ public class Player_Combat : MonoBehaviour
     }
     public void UseSkill(Skill skill)
     {
+        if (skill == null)
+            return;
+
         // Não pode trocar durante a animação
         if (isAttacking)
             return;
@@ -145,12 +155,16 @@ public class Player_Combat : MonoBehaviour
             return;
         }
 
-        if (playerTargeting.currentTarget == null)
+        GameObject selectedTarget = playerTargeting.currentTarget;
+
+        if (selectedTarget == null)
             return;
+
+        attackTarget = selectedTarget;
 
         float distance = Vector2.Distance(
             transform.position,
-            playerTargeting.currentTarget.transform.position);
+            attackTarget.transform.position);
 
         if (distance > currentSkill.range)
         {

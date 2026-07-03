@@ -12,16 +12,28 @@ public class CancelManager : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
     }
 
     private void OnEnable()
     {
+        if (Instance != this)
+            return;
+
         cancelAction.action.Enable();
     }
 
     private void OnDisable()
     {
+        if (Instance != this)
+            return;
+
         cancelAction.action.Disable();
     }
 
@@ -44,6 +56,12 @@ public class CancelManager : MonoBehaviour
     public void Unregister(ICancelable cancelable)
     {
         cancelables.Remove(cancelable);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     private void ExecuteCancel()

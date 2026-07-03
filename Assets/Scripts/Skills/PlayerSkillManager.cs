@@ -17,7 +17,7 @@ public class PlayerSkillManager : MonoBehaviour
     private float skill2Cooldown;
     private float skill3Cooldown;
 
-    private Skill queuedSkill; // NOVO: skill que foi pedida enquanto isAttacking == true
+    private Skill queuedSkill;
 
     private void Awake()
     {
@@ -36,48 +36,48 @@ public class PlayerSkillManager : MonoBehaviour
         skill1.action.Disable();
         skill2.action.Disable();
         skill3.action.Disable();
+        queuedSkill = null;
     }
 
     private void Update()
     {
-        if (skill1Cooldown > 0)
-            skill1Cooldown -= Time.deltaTime;
-
-        if (skill2Cooldown > 0)
-            skill2Cooldown -= Time.deltaTime;
-        
-        if (skill3Cooldown > 0)
-        skill3Cooldown -= Time.deltaTime;
+        TickCooldown(ref skill1Cooldown);
+        TickCooldown(ref skill2Cooldown);
+        TickCooldown(ref skill3Cooldown);
 
         if (skill1.action.WasPressedThisFrame())
         {
-            TryCastOrQueue(autoAttack, skill1Cooldown); // ALTERADO
+            TryCastOrQueue(autoAttack);
         }
 
         if (skill2.action.WasPressedThisFrame())
         {
-            TryCastOrQueue(powerStrike, skill2Cooldown); // ALTERADO
+            TryCastOrQueue(powerStrike);
         }
 
         if (skill3.action.WasPressedThisFrame())
         {
-            TryCastOrQueue(stomp, skill3Cooldown);
+            TryCastOrQueue(stomp);
         }
 
-        // NOVO: assim que a animação atual termina, dispara a skill que ficou na fila
         if (!combat.isAttacking && queuedSkill != null)
         {
             Skill toCast = queuedSkill;
             queuedSkill = null;
-            toCast.Cast(combat);
+            TryCastOrQueue(toCast);
         }
     }
 
-    // NOVO: centraliza a decisão entre castar agora ou bufferizar
-    private void TryCastOrQueue(Skill skill, float cooldownRemaining)
+    private void TickCooldown(ref float cooldown)
     {
-        if (cooldownRemaining > 0)
-            return; // ainda em cooldown, ignora o input normalmente
+        if (cooldown > 0f)
+            cooldown = Mathf.Max(0f, cooldown - Time.deltaTime);
+    }
+
+    private void TryCastOrQueue(Skill skill)
+    {
+        if (skill == null || GetRemainingCooldown(skill) > 0f)
+            return;
 
         if (combat.isAttacking)
         {
@@ -88,15 +88,29 @@ public class PlayerSkillManager : MonoBehaviour
         skill.Cast(combat);
     }
 
+    public float GetRemainingCooldown(Skill skill)
+    {
+        if (skill == autoAttack)
+            return skill1Cooldown;
+
+        if (skill == powerStrike)
+            return skill2Cooldown;
+
+        if (skill == stomp)
+            return skill3Cooldown;
+
+        return float.PositiveInfinity;
+    }
+
     public void StartCooldown(Skill skill)
     {
         if (skill == autoAttack)
-            skill1Cooldown = autoAttack.cooldown;
+            skill1Cooldown = skill.cooldown;
 
         else if (skill == powerStrike)
-            skill2Cooldown = powerStrike.cooldown;
+            skill2Cooldown = skill.cooldown;
 
         else if (skill == stomp)
-            skill3Cooldown = stomp.cooldown;
+            skill3Cooldown = skill.cooldown;
     }
 }

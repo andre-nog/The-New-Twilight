@@ -25,13 +25,22 @@ public class TooltipManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
-            Instance = this;
-        else
+        if (Instance != null && Instance != this)
+        {
             Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
 
         rectTransform = GetComponent<RectTransform>();
         statsContainerRect = statsContainer.GetComponent<RectTransform>();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     private void Start()

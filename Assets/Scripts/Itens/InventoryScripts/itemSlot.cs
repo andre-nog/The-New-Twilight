@@ -45,6 +45,9 @@ public class ItemSlot : MonoBehaviour,
 
     public int AddItem(ItemSO item, int quantity)
     {
+        if (item == null || quantity <= 0)
+            return quantity;
+
         // Se já existe um item diferente neste slot
         if (this.item != null && this.item != item)
             return quantity;
@@ -57,6 +60,14 @@ public class ItemSlot : MonoBehaviour,
         this.item = item;
         itemImage.sprite = item.itemSprite;
         itemImage.enabled = true;
+
+        if (!item.stackable)
+        {
+            this.quantity = 1;
+            isFull = true;
+            quantityText.enabled = false;
+            return quantity - 1;
+        }
 
         // Soma a quantidade ao stack
         this.quantity += quantity;
@@ -187,7 +198,7 @@ public class ItemSlot : MonoBehaviour,
     {
         item = newItem;
         quantity = 1;
-        isFull = false;
+        isFull = !newItem.stackable;
 
         itemImage.sprite = newItem.itemSprite;
         itemImage.enabled = true;
@@ -211,9 +222,9 @@ public class ItemSlot : MonoBehaviour,
         inventoryManager.DropItem(this);
     }
 
-        public void OnPointerEnter(PointerEventData eventData)
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        if (item == null)
+        if (item == null || TooltipManager.Instance == null)
             return;
 
         TooltipManager.Instance.Show(item);
@@ -221,6 +232,7 @@ public class ItemSlot : MonoBehaviour,
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        TooltipManager.Instance.Hide();
+        if (TooltipManager.Instance != null)
+            TooltipManager.Instance.Hide();
     }
 }

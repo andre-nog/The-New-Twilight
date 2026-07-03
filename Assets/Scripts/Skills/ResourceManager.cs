@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class ResourceManager : MonoBehaviour
@@ -9,13 +10,11 @@ public class ResourceManager : MonoBehaviour
     public int CurrentMomentum { get; private set; }
 
     public int MaxMomentum => maxMomentum;
+    public event Action OnMomentumChanged;
 
     public void AddMomentum(int amount)
     {
-        CurrentMomentum = Mathf.Clamp(
-            CurrentMomentum + amount,
-            0,
-            maxMomentum);
+        SetMomentum(CurrentMomentum + amount);
     }
 
     public bool HasMomentum(int amount)
@@ -28,19 +27,30 @@ public class ResourceManager : MonoBehaviour
         if (!HasMomentum(amount))
             return false;
 
-        CurrentMomentum -= amount;
+        SetMomentum(CurrentMomentum - amount);
         return true;
     }
 
     public int ConsumeAllMomentum()
     {
         int consumed = CurrentMomentum;
-        CurrentMomentum = 0;
+        SetMomentum(0);
         return consumed;
     }
 
     public void ResetMomentum()
     {
-        CurrentMomentum = 0;
+        SetMomentum(0);
+    }
+
+    private void SetMomentum(int value)
+    {
+        int newValue = Mathf.Clamp(value, 0, maxMomentum);
+
+        if (newValue == CurrentMomentum)
+            return;
+
+        CurrentMomentum = newValue;
+        OnMomentumChanged?.Invoke();
     }
 }

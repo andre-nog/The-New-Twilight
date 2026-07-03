@@ -82,7 +82,7 @@ public class EquippedSlot : MonoBehaviour,
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (equippedItem == null)
+        if (equippedItem == null || TooltipManager.Instance == null)
             return;
 
         TooltipManager.Instance.Show(equippedItem);
@@ -90,6 +90,7 @@ public class EquippedSlot : MonoBehaviour,
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        TooltipManager.Instance.Hide();
+        if (TooltipManager.Instance != null)
+            TooltipManager.Instance.Hide();
     }
 }

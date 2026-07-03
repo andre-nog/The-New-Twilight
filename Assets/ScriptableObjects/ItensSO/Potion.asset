@@ -15,8 +15,8 @@ MonoBehaviour:
   itemName: Potion
   itemSprite: {fileID: -6212904085613963113, guid: c884743fee9b0bf44afb4c52ad8d73e1, type: 3}
   description: 
-  worldPrefab: {fileID: 7884234964305002433, guid: 5bbd430fcd634304fbbb2b8d68001abb, type: 3}
-  statToChange: 1
-  amountToChangeStat: 3
-  attributeToChange: 3
-  amountToChangeAttribute: 2
+  modifiers:
+  - stat: 0
+    amount: 3
+  itemType: 0
+  stackable: 1

@@ -17,16 +17,28 @@ public class InventoryManager : MonoBehaviour, ICancelable
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
     }
 
     private void OnEnable()
     {
+        if (Instance != this)
+            return;
+
         toggleInventory.action.Enable();
     }
 
     private void OnDisable()
     {
+        if (Instance != this)
+            return;
+
         toggleInventory.action.Disable();
     }
 
@@ -69,6 +81,9 @@ public class InventoryManager : MonoBehaviour, ICancelable
 
     public int AddItem(ItemSO item, int quantity)
     {
+        if (item == null || quantity <= 0)
+            return quantity;
+
         // Apenas itens stackáveis tentam completar stacks existentes
         if (item.stackable)
         {
@@ -106,7 +121,9 @@ public class InventoryManager : MonoBehaviour, ICancelable
     {
         for (int i = 0; i < itemSlot.Length; i++)
         {
-            itemSlot[i].selectedShader.SetActive(false);
+            if (itemSlot[i].selectedShader != null)
+                itemSlot[i].selectedShader.SetActive(false);
+
             itemSlot[i].thisItemSelected = false;
         }
     }
@@ -143,6 +160,9 @@ public class InventoryManager : MonoBehaviour, ICancelable
     {
         if (CancelManager.Instance != null)
             CancelManager.Instance.Unregister(this);
+
+        if (Instance == this)
+            Instance = null;
     }
 
     public bool CanCancel()
