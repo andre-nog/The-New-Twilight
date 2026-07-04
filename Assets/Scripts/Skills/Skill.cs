@@ -14,13 +14,21 @@ public abstract class Skill : ScriptableObject
     public float cooldown;
     public float range;
     public float damageMultiplier = 1f;
+    public DamageSchool damageSchool = DamageSchool.Physical;
+
+    [Tooltip("Se marcado, o cooldown dessa skill é acelerado por Haste: tempoFinal = tempoBase / (1 + Haste). Hoje só faz sentido pro Auto Attack.")]
+    public bool affectedByHaste = false;
 
     [Header("Resource")]
     [FormerlySerializedAs("momentumGenerated")]
     public int resourceGenerated;
     [FormerlySerializedAs("momentumCost")]
     public int resourceCost;
-    
+
+    [Header("Mana")]
+    [Tooltip("Custo em Mana (StatsManager), separado do Resource genérico acima (Momentum). 0 = não gasta Mana.")]
+    public int manaCost;
+
     [Header("Visual Effects")]
     public GameObject hitVFX;
     public Vector3 hitVFXOffset;

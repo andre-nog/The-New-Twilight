@@ -19,6 +19,11 @@ public class PlayerSkillManager : MonoBehaviour
         public InputActionReference input;
         public Skill skill;
         public float cooldown;
+
+        // Duração efetiva do cooldown que acabou de começar (já com Haste aplicado,
+        // se a skill for afetada) — a UI usa isso pra normalizar o preenchimento,
+        // em vez do skill.cooldown bruto.
+        public float duration;
     }
 
     private Player_Combat combat;
@@ -128,11 +133,27 @@ public class PlayerSkillManager : MonoBehaviour
         return slot != null ? slot.cooldown : float.PositiveInfinity;
     }
 
+    // Duração efetiva do cooldown em andamento (já com Haste, se aplicável) — a UI
+    // usa isso pra normalizar o preenchimento em vez do skill.cooldown bruto.
+    public float GetCooldownDuration(Skill skill)
+    {
+        SkillSlot slot = FindSlot(skill);
+        return slot != null ? slot.duration : 0f;
+    }
+
     public void StartCooldown(Skill skill)
     {
         SkillSlot slot = FindSlot(skill);
 
-        if (slot != null)
-            slot.cooldown = skill.cooldown;
+        if (slot == null)
+            return;
+
+        float duration = skill.cooldown;
+
+        if (skill.affectedByHaste)
+            duration /= 1f + StatsManager.Instance.Haste;
+
+        slot.cooldown = duration;
+        slot.duration = duration;
     }
 }

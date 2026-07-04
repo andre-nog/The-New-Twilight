@@ -119,17 +119,27 @@ O projeto já possui nível, experiência e crescimento da experiência necessá
 
 ### Implementado
 
-- Strength;
-- Defense;
-- Agility;
-- Intelligence;
-- Damage;
-- Move Speed;
-- Max Health e Current Health;
-- Critical Chance;
-- Critical Damage.
+O sistema separa atributos primários (crescimento do personagem) de atributos secundários (usados pelas fórmulas de combate). O jogador não distribui pontos manualmente — todo crescimento primário é automático.
 
-Equipamentos podem adicionar e remover modificadores desses atributos. Atualmente, Damage, Move Speed, vida e atributos críticos participam diretamente de sistemas funcionais. A função definitiva dos quatro atributos primários e da defesa ainda precisa ser definida.
+**Primários** — Strength, Agility, Intelligence. Cada um guarda um valor Base (ganho por level up) e um Bonus (equipamentos, buffs, passivas); o resto do jogo consome sempre o Total (Base + Bonus).
+
+**Secundários** — Attack Power, Spell Power, Max Health, Health Regen, Max Mana, Mana Regen, Critical Chance, Critical Damage, Haste, Armor, Move Speed. São recalculados a partir dos primários por um método centralizado (`StatsManager.RecalculateStats`), chamado sempre que algo muda (level up, equipar/desequipar item). O resto do jogo (ex.: `Player_Combat`) só lê os valores já calculados, nunca refaz a conta.
+
+Regras de derivação atuais:
+
+- Strength gera Max Health, Health Regen, e Attack Power apenas se a classe atual tiver Strength como atributo primário;
+- Agility gera Critical Chance, Haste, e Attack Power apenas se a classe atual tiver Agility como atributo primário;
+- Intelligence gera Max Mana, Mana Regen, e Spell Power apenas se a classe atual tiver Intelligence como atributo primário;
+- Armor não deriva de nenhum atributo — só vem de equipamentos, buffs e passivas;
+- Critical Damage e Move Speed também não derivam de atributo — têm um valor base configurável mais o bônus de equipamentos.
+
+Cada classe terá um `PrimaryAttribute` (Strength, Agility ou Intelligence) que decide qual dos dois poderes ofensivos (Attack Power ou Spell Power) ela usa. Como a promoção de classes ainda não existe, isso hoje é só um campo configurável no `StatsManager`, pronto para quando houver Villager/Warrior/Assassin/Mage de fato.
+
+Haste é modelada como multiplicador de velocidade (`tempoFinal = tempoBase / (1 + Haste)`), não como redução de cooldown — pensada para no futuro acelerar auto attack, cast time e animações, e não apenas os cooldowns de habilidade.
+
+Equipamentos continuam adicionando e removendo modificadores (agora tipados por atributo primário ou por stat secundário) ao equipar/desequipar.
+
+Mana agora é um recurso gastável de verdade: cada Skill pode ter um custo de Mana próprio, verificado e descontado do `currentMana` do jogador (vive no `StatsManager`, ao lado da vida — separado do `ResourceManager` genérico, que continua sendo usado só para Momentum). Mana volta ao máximo no respawn, igual à vida. Health Regen e Mana Regen continuam existindo como números calculados, mas ainda sem nenhum sistema de tique de regeneração passiva — hoje só sobem juntando pontos de atributo, não com o tempo.
 
 ## 8. Inimigos
 
@@ -207,6 +217,7 @@ Não há persistência de inventário ou equipamentos entre sessões.
 ### Implementado
 
 - vida atual e máxima;
+- Mana atual e máxima;
 - experiência e nível;
 - Momentum segmentado em seis unidades;
 - painel de atributos;
@@ -214,10 +225,12 @@ Não há persistência de inventário ou equipamentos entre sessões.
 - tooltips;
 - barra de habilidades e cooldowns;
 - barras de vida dos inimigos;
-- dano flutuante normal e crítico;
+- dano flutuante normal e crítico (agora também quando o jogador recebe dano, em vermelho);
 - tela de morte com contagem regressiva até o respawn.
 
 O input `ToggleStats` está associado à tecla `C`, mas a abertura e o fechamento do painel de atributos ainda precisam ser conectados.
+
+Existe também um painel de leitura rápida de todos os stats calculados (Attack Power, Spell Power, atributos totais, regens, etc.), gerado junto com a barra de habilidades — ferramenta de debug para balanceamento, não é a UI final de atributos.
 
 ## 12. Escopo do MVP
 
@@ -258,7 +271,7 @@ A experiência do MVP termina após o primeiro chefe. Novas classes, sistema com
 | Momentum | Implementado no protótipo |
 | Inimigo corpo a corpo | Implementado |
 | Experiência e nível | Parcial |
-| Atributos | Parcial |
+| Atributos (primário/secundário, RecalculateStats) | Implementado no protótipo |
 | Inventário e equipamento | Implementado no protótipo |
 | UI de combate | Implementado no protótipo |
 | Promoção de classes | Planejado |
@@ -273,8 +286,8 @@ A experiência do MVP termina após o primeiro chefe. Novas classes, sistema com
 ## 15. Decisões de design pendentes
 
 - Momentum permanecerá com o Villager, será transferido ao Warrior ou será renomeado para Rage?
-- Como Strength, Defense, Agility e Intelligence afetam as fórmulas?
-- Quais atributos são ganhos ao subir de nível e ao promover uma classe?
+- As fórmulas de Strength/Agility/Intelligence (ver seção 7) já existem, mas os valores de escala e o crescimento por nível são placeholders — ainda precisam de balanceamento de design.
+- Quais classes existirão e qual o `PrimaryAttribute` de cada uma? (Warrior é o próximo passo, mas Agility/Assassin e Intelligence/Mage ainda não têm data.)
 - Morte e respawn do jogador já funcionam (sem penalidade, cura total e reposicionamento após alguns segundos); ainda falta decidir se haverá alguma penalidade por morrer.
 - Qual será a estrutura de quests e recompensas?
 - Como funcionarão crafting e aprimoramento?

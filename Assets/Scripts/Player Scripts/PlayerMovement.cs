@@ -60,7 +60,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (!autoMoving)
         {
-            rb.linearVelocity = _moveDirection * StatsManager.Instance.moveSpeed;
+            rb.linearVelocity = _moveDirection * StatsManager.Instance.MoveSpeed;
         }
         else
         {
@@ -103,7 +103,7 @@ public class PlayerMovement : MonoBehaviour
         Vector2 direction =
             (target - (Vector2)transform.position).normalized;
 
-        rb.linearVelocity = direction * StatsManager.Instance.moveSpeed;
+        rb.linearVelocity = direction * StatsManager.Instance.MoveSpeed;
 
         if (Vector2.Distance(transform.position, target) < 0.1f)
         {

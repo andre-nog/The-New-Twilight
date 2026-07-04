@@ -33,11 +33,11 @@ public class StatsUI : MonoBehaviour
     public void UpdateAllStats()
     {
         statsSlots[0].SetValue(StatsManager.Instance.currentHealth);
-        statsSlots[1].SetValue(StatsManager.Instance.strength);
-        statsSlots[2].SetValue(StatsManager.Instance.defense);
-        statsSlots[3].SetValue(StatsManager.Instance.agility);
-        statsSlots[4].SetValue(StatsManager.Instance.intelligence);
-        statsSlots[5].SetValue(StatsManager.Instance.damage);
-        statsSlots[6].SetValue(StatsManager.Instance.moveSpeed);
+        statsSlots[1].SetValue(StatsManager.Instance.strength.Total);
+        statsSlots[2].SetValue(Mathf.RoundToInt(StatsManager.Instance.Armor));
+        statsSlots[3].SetValue(StatsManager.Instance.agility.Total);
+        statsSlots[4].SetValue(StatsManager.Instance.intelligence.Total);
+        statsSlots[5].SetValue(Mathf.RoundToInt(StatsManager.Instance.AttackPower));
+        statsSlots[6].SetValue(Mathf.RoundToInt(StatsManager.Instance.MoveSpeed));
     }
 }

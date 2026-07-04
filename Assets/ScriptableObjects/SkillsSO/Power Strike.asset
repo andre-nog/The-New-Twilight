@@ -20,8 +20,11 @@ MonoBehaviour:
   cooldown: 6
   range: 1.2
   damageMultiplier: 2.5
-  resourceGenerated: 2
-  resourceCost: 0
+  damageSchool: 0
+  affectedByHaste: 0
+  resourceGenerated: 0
+  resourceCost: 1
+  manaCost: 10
   hitVFX: {fileID: 133553090695271686, guid: cf3d17977cbce2f4ebba086031033c3f, type: 3}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: PowerStrike

@@ -102,6 +102,10 @@ public class Player_Combat : MonoBehaviour
             !resourceManager.SpendResource(currentSkill.resourceCost))
             return;
 
+        if (currentSkill.manaCost > 0 &&
+            !StatsManager.Instance.SpendMana(currentSkill.manaCost))
+            return;
+
         skillManager.StartCooldown(currentSkill);
 
         isAttacking = true;
@@ -146,6 +150,9 @@ public class Player_Combat : MonoBehaviour
         if (!resourceManager.HasResource(skill.resourceCost))
             return;
 
+        if (!StatsManager.Instance.HasMana(skill.manaCost))
+            return;
+
         currentSkill = skill;
 
         // Skills que não precisam de alvo (ex.: Stomp)
@@ -178,23 +185,19 @@ public class Player_Combat : MonoBehaviour
 
     private void DealDamage(Enemy_Health enemyHealth)
     {
-        int damage = Mathf.RoundToInt(
-        StatsManager.Instance.damage *
-        currentSkill.damageMultiplier *
-        damageMultiplierBonus *
-        GetPassiveDamageMultiplier());
+        float offensivePower = currentSkill.damageSchool == DamageSchool.Magical
+            ? StatsManager.Instance.SpellPower
+            : StatsManager.Instance.AttackPower;
 
-        bool critical =
-            Random.Range(0f, 100f) <
-            StatsManager.Instance.criticalChance;
+        DamageResult result = DamageCalculator.Calculate(
+            offensivePower,
+            currentSkill.damageMultiplier,
+            damageMultiplierBonus * GetPassiveDamageMultiplier(),
+            StatsManager.Instance.CriticalChance,
+            StatsManager.Instance.CriticalDamage,
+            enemyHealth.armor);
 
-        if (critical)
-        {
-            damage = Mathf.RoundToInt(
-                damage * (1f + StatsManager.Instance.criticalDamage / 100f));
-        }
-
-        enemyHealth.ChangeHealth(-damage, critical);
+        enemyHealth.ChangeHealth(-result.FinalDamage, result.IsCritical);
     }
     public void DealAreaDamage(float radius)
     {

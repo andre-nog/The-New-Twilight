@@ -4,7 +4,6 @@ using TMPro;
 
 public class ExpManager : MonoBehaviour
 {
-    public int level;
     public int currentExp;
     public int expToLevel = 10;
     public float expGrowthMultiplier = 1.2f;
@@ -41,15 +40,16 @@ public class ExpManager : MonoBehaviour
 
     private void LevelUp()
     {
-        level++;
         currentExp -= expToLevel;
         expToLevel = Mathf.RoundToInt(expToLevel * expGrowthMultiplier);
+
+        StatsManager.Instance.OnLevelUp();
     }
 
     public void UpdateUI()
     {
         expSlider.maxValue = expToLevel;
         expSlider.value = currentExp;
-        currentLevelText.text = "Level: " + level;
+        currentLevelText.text = "Level: " + StatsManager.Instance.level;
     }
 }

@@ -1,9 +1,14 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
+    // Inimigos assinam isso pra desaggrar e voltar ao spawn assim que o player morre,
+    // em vez de continuar perseguindo/atacando um alvo "morto" até o respawn.
+    public static event Action OnPlayerDied;
+
     public TMP_Text healthText;
     public Transform respawnPoint;
     public float respawnDelay = 3f;
@@ -65,11 +70,21 @@ public class PlayerHealth : MonoBehaviour
     public void ChangeHealth(int amount)
     {
         StatsManager.Instance.ChangeHealth(amount);
+
+        // Mesmo popup de dano flutuante que Enemy_Health já usa — só a cor muda
+        // (sempre vermelho, já que ataque de inimigo não tem crítico hoje).
+        if (amount < 0)
+        {
+            DamageManager.Instance.CreatePopup(
+                transform.position + Vector3.up * 0.5f,
+                -amount,
+                Color.red);
+        }
     }
 
     private void RefreshUI()
     {
-        healthText.text = "HP: " + StatsManager.Instance.currentHealth + " / " + StatsManager.Instance.maxHealth;
+        healthText.text = "HP: " + StatsManager.Instance.currentHealth + " / " + StatsManager.Instance.MaxHealth;
 
         if (StatsManager.Instance.currentHealth <= 0 && !isDead)
             Die();
@@ -84,6 +99,8 @@ public class PlayerHealth : MonoBehaviour
         SetVisualEnabled(false);
         ZeroVelocity();
         ShowDeathOverlay();
+
+        OnPlayerDied?.Invoke();
     }
 
     private void Respawn()
@@ -95,6 +112,7 @@ public class PlayerHealth : MonoBehaviour
 
         ZeroVelocity();
         StatsManager.Instance.FullHeal();
+        StatsManager.Instance.RestoreFullMana();
 
         SetControlEnabled(true);
         SetVisualEnabled(true);

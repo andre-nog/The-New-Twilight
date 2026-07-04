@@ -13,6 +13,12 @@ public class SkillBarUI : MonoBehaviour
     private SkillSlotUI[] slots;
     private Image[] momentumSegments;
 
+    private Image healthFillImage;
+    private TMP_Text healthBarText;
+    private Image manaFillImage;
+    private TMP_Text manaBarText;
+    private TMP_Text debugStatsText;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void CreateForCurrentScene()
     {
@@ -53,6 +59,9 @@ public class SkillBarUI : MonoBehaviour
 
         for (int i = 0; i < slots.Length; i++)
             slots[i].Refresh(skillManager);
+
+        RefreshVitalBars();
+        RefreshDebugStats();
     }
 
     private void Build(PlayerSkillManager manager)
@@ -87,6 +96,8 @@ public class SkillBarUI : MonoBehaviour
             slots[i] = CreateSlot(bar, equippedSkills[i], (i + 1).ToString());
 
         BuildMomentumBar();
+        BuildVitalBars();
+        BuildDebugStatsPanel();
     }
 
     private void BuildMomentumBar()
@@ -167,6 +178,118 @@ public class SkillBarUI : MonoBehaviour
                 ? new Color(1f, 0.64f, 0.12f, 1f)
                 : new Color(0.16f, 0.18f, 0.22f, 1f);
         }
+    }
+
+    // Duas barras contínuas (não segmentadas, ao contrário do Momentum) empilhadas
+    // acima dele: Mana logo em cima, Vida acima da Mana.
+    private void BuildVitalBars()
+    {
+        const float barWidth = 240f;
+        const float barHeight = 24f;
+
+        (manaFillImage, manaBarText) = CreateVitalBar(
+            "Mana Bar", 168f, barWidth, barHeight, new Color(0.2f, 0.4f, 0.9f, 1f));
+
+        (healthFillImage, healthBarText) = CreateVitalBar(
+            "Health Bar", 168f + barHeight + 8f, barWidth, barHeight, new Color(0.8f, 0.15f, 0.15f, 1f));
+    }
+
+    private (Image fill, TMP_Text text) CreateVitalBar(
+        string objectName, float y, float width, float height, Color fillColor)
+    {
+        RectTransform bar = CreateUIObject(objectName, transform);
+        bar.anchorMin = new Vector2(0.5f, 0f);
+        bar.anchorMax = new Vector2(0.5f, 0f);
+        bar.pivot = new Vector2(0.5f, 0.5f);
+        bar.anchoredPosition = new Vector2(0f, y);
+        bar.sizeDelta = new Vector2(width, height);
+
+        Image background = bar.gameObject.AddComponent<Image>();
+        background.sprite = GetRuntimeSprite();
+        background.color = new Color(0.04f, 0.05f, 0.07f, 0.85f);
+
+        Image fill = CreateImage("Fill", bar, fillColor);
+        fill.sprite = GetRuntimeSprite();
+        fill.type = Image.Type.Filled;
+        fill.fillMethod = Image.FillMethod.Horizontal;
+        fill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        fill.fillAmount = 1f;
+        SetStretch(fill.rectTransform, 2f);
+
+        TMP_Text text = CreateText(objectName + " Text", bar, string.Empty, 14f, TextAlignmentOptions.Center);
+        SetStretch(text.rectTransform, 0f);
+        text.fontStyle = FontStyles.Bold;
+
+        return (fill, text);
+    }
+
+    private void RefreshVitalBars()
+    {
+        if (StatsManager.Instance == null)
+            return;
+
+        StatsManager stats = StatsManager.Instance;
+
+        if (healthFillImage != null)
+        {
+            healthFillImage.fillAmount = stats.MaxHealth > 0
+                ? (float)stats.currentHealth / stats.MaxHealth
+                : 0f;
+            healthBarText.text = $"{stats.currentHealth} / {stats.MaxHealth}";
+        }
+
+        if (manaFillImage != null)
+        {
+            manaFillImage.fillAmount = stats.MaxMana > 0
+                ? (float)stats.currentMana / stats.MaxMana
+                : 0f;
+            manaBarText.text = $"{stats.currentMana} / {stats.MaxMana}";
+        }
+    }
+
+    // Painel de leitura rápida pra balanceamento — mostra os valores já calculados
+    // (Attack Power, Strength total, etc.), nunca os "crus"/base. Ferramenta de dev,
+    // não é a UI final de atributos (essa continua sendo a Canvas de Stats à parte).
+    private void BuildDebugStatsPanel()
+    {
+        RectTransform panel = CreateUIObject("Debug Stats Panel", transform);
+        panel.anchorMin = new Vector2(0f, 0f);
+        panel.anchorMax = new Vector2(0f, 0f);
+        panel.pivot = new Vector2(0f, 0f);
+        panel.anchoredPosition = new Vector2(16f, 16f);
+        panel.sizeDelta = new Vector2(260f, 340f);
+
+        Image background = panel.gameObject.AddComponent<Image>();
+        background.sprite = GetRuntimeSprite();
+        background.color = new Color(0.04f, 0.05f, 0.07f, 0.75f);
+
+        debugStatsText = CreateText("Stats Text", panel, string.Empty, 15f, TextAlignmentOptions.TopLeft);
+        SetStretch(debugStatsText.rectTransform, 10f);
+        debugStatsText.textWrappingMode = TextWrappingModes.NoWrap;
+    }
+
+    private void RefreshDebugStats()
+    {
+        if (debugStatsText == null || StatsManager.Instance == null)
+            return;
+
+        StatsManager s = StatsManager.Instance;
+
+        debugStatsText.text =
+            $"HP: {s.currentHealth}/{s.MaxHealth}\n" +
+            $"Mana: {s.currentMana}/{s.MaxMana}\n" +
+            $"Strength: {s.strength.Total}\n" +
+            $"Agility: {s.agility.Total}\n" +
+            $"Intelligence: {s.intelligence.Total}\n" +
+            $"Attack Power: {s.AttackPower:0.#}\n" +
+            $"Spell Power: {s.SpellPower:0.#}\n" +
+            $"Armor: {s.Armor:0.#}\n" +
+            $"Crit Chance: {s.CriticalChance:0.#}%\n" +
+            $"Crit Damage: {s.CriticalDamage:0.#}%\n" +
+            $"Haste: {s.Haste:0.##}\n" +
+            $"Health Regen: {s.HealthRegen:0.##}\n" +
+            $"Mana Regen: {s.ManaRegen:0.##}\n" +
+            $"Move Speed: {s.MoveSpeed:0.#}";
     }
 
     private static SkillSlotUI CreateSlot(Transform parent, Skill skill, string key)
@@ -308,7 +431,7 @@ public class SkillBarUI : MonoBehaviour
         public void Refresh(PlayerSkillManager manager)
         {
             float remaining = manager.GetRemainingCooldown(skill);
-            float duration = skill != null ? skill.cooldown : 0f;
+            float duration = manager.GetCooldownDuration(skill);
             bool coolingDown = remaining > 0f && duration > 0f;
 
             cooldownImage.enabled = coolingDown;

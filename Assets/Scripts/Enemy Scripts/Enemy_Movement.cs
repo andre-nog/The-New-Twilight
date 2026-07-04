@@ -25,6 +25,27 @@ public class Enemy_Movement : MonoBehaviour
     private Enemy_Health enemyHealth;
     [SerializeField] private Transform healthBarTransform;
 
+    private void OnEnable()
+    {
+        PlayerHealth.OnPlayerDied += ForceDeaggro;
+    }
+
+    private void OnDisable()
+    {
+        PlayerHealth.OnPlayerDied -= ForceDeaggro;
+    }
+
+    // O player morreu — mesmo efeito de perder aggro por distância (solta o alvo e
+    // volta pro spawn), só que disparado na hora em vez de esperar o inimigo se afastar.
+    private void ForceDeaggro()
+    {
+        if (enemyState == EnemyState.Returning)
+            return;
+
+        player = null;
+        ChangeState(EnemyState.Returning);
+    }
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();

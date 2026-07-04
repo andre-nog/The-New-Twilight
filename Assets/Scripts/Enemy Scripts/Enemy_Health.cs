@@ -11,6 +11,9 @@ public class Enemy_Health : MonoBehaviour
     public int maxHealth = 100;
     public int currentHealth;
 
+    [Tooltip("Mitigação de dano recebido — a fórmula fica centralizada em DamageCalculator, não aqui.")]
+    public float armor = 0f;
+
     public Slider healthSlider;
 
     private void Start()
