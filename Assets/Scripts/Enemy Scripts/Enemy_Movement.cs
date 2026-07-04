@@ -84,7 +84,7 @@ public class Enemy_Movement : MonoBehaviour
         }
 
         float distanceFromSpawn =
-            Vector2.Distance(player.position, spawnPosition);
+            Vector2.Distance(transform.position, spawnPosition);
 
         if (distanceFromSpawn >= loseAggroRange)
         {
@@ -172,7 +172,7 @@ public class Enemy_Movement : MonoBehaviour
                 player.position);
 
             float distanceFromSpawn = Vector2.Distance(
-                player.position,
+                transform.position,
                 spawnPosition);
 
             // Perdeu o aggro.
@@ -227,6 +227,27 @@ public class Enemy_Movement : MonoBehaviour
     public Transform GetPlayer()
     {
         return player;
+    }
+
+    public bool IsAttacking => enemyState == EnemyState.Attacking;
+
+    // Usado por outras habilidades (ex.: Enemy_RangedAttack) para forçar a pose parada
+    // enquanto assumem o controle do inimigo temporariamente.
+    public void SetIdlePose()
+    {
+        anim.SetBool("isChasing", false);
+        anim.SetBool("isAttacking", false);
+        anim.SetBool("isIdle", true);
+    }
+
+    // Reaplica os bools do Animator para o estado atual, para desfazer SetIdlePose().
+    // Não reusa ChangeState porque ela só alterna o bool do estado antigo/novo — como o
+    // enemyState nunca mudou enquanto pausado, ela não zeraria o isIdle forçado.
+    public void RefreshAnimatorState()
+    {
+        anim.SetBool("isIdle", enemyState == EnemyState.Idle);
+        anim.SetBool("isChasing", enemyState == EnemyState.Chasing || enemyState == EnemyState.Returning);
+        anim.SetBool("isAttacking", enemyState == EnemyState.Attacking);
     }
 
     void ChangeState(EnemyState newState)
@@ -301,7 +322,7 @@ public class Enemy_Movement : MonoBehaviour
         }
 
         float distanceFromSpawn = Vector2.Distance(
-            player.position,
+            transform.position,
             spawnPosition);
 
         if (distanceFromSpawn > loseAggroRange)

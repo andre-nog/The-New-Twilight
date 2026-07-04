@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,52 +13,74 @@ public class PlayerSkillManager : MonoBehaviour
     public Skill autoAttack;
     public Skill powerStrike;
     public Skill stomp;
-    private Player_Combat combat;
-    private float skill1Cooldown;
-    private float skill2Cooldown;
-    private float skill3Cooldown;
 
+    private class SkillSlot
+    {
+        public InputActionReference input;
+        public Skill skill;
+        public float cooldown;
+    }
+
+    private Player_Combat combat;
+    private SkillSlot[] slots;
     private Skill queuedSkill;
+
+    public IReadOnlyList<Skill> EquippedSkills => equippedSkills;
+    private Skill[] equippedSkills;
 
     private void Awake()
     {
         combat = GetComponent<Player_Combat>();
+
+        EnsureSlotsBuilt();
+    }
+
+    // slots é privado e não-serializado — recompilar scripts no Editor (domain reload)
+    // zera esse campo sem rodar Awake() de novo para objetos que já existiam na cena.
+    // OnEnable roda nesse caso, então reconstruímos aqui também se precisar.
+    private void EnsureSlotsBuilt()
+    {
+        if (slots != null)
+            return;
+
+        // Adicionar uma nova skill: adicione um par (input, skill) aqui.
+        slots = new[]
+        {
+            new SkillSlot { input = skill1, skill = autoAttack },
+            new SkillSlot { input = skill2, skill = powerStrike },
+            new SkillSlot { input = skill3, skill = stomp }
+        };
+
+        equippedSkills = new Skill[slots.Length];
+        for (int i = 0; i < slots.Length; i++)
+            equippedSkills[i] = slots[i].skill;
     }
 
     private void OnEnable()
     {
-        skill1.action.Enable();
-        skill2.action.Enable();
-        skill3.action.Enable();
+        EnsureSlotsBuilt();
+
+        foreach (SkillSlot slot in slots)
+            slot.input.action.Enable();
     }
 
     private void OnDisable()
     {
-        skill1.action.Disable();
-        skill2.action.Disable();
-        skill3.action.Disable();
+        foreach (SkillSlot slot in slots)
+            slot.input.action.Disable();
+
         queuedSkill = null;
     }
 
     private void Update()
     {
-        TickCooldown(ref skill1Cooldown);
-        TickCooldown(ref skill2Cooldown);
-        TickCooldown(ref skill3Cooldown);
+        foreach (SkillSlot slot in slots)
+            TickCooldown(slot);
 
-        if (skill1.action.WasPressedThisFrame())
+        foreach (SkillSlot slot in slots)
         {
-            TryCastOrQueue(autoAttack);
-        }
-
-        if (skill2.action.WasPressedThisFrame())
-        {
-            TryCastOrQueue(powerStrike);
-        }
-
-        if (skill3.action.WasPressedThisFrame())
-        {
-            TryCastOrQueue(stomp);
+            if (slot.input.action.WasPressedThisFrame())
+                TryCastOrQueue(slot.skill);
         }
 
         if (!combat.isAttacking && queuedSkill != null)
@@ -68,10 +91,10 @@ public class PlayerSkillManager : MonoBehaviour
         }
     }
 
-    private void TickCooldown(ref float cooldown)
+    private static void TickCooldown(SkillSlot slot)
     {
-        if (cooldown > 0f)
-            cooldown = Mathf.Max(0f, cooldown - Time.deltaTime);
+        if (slot.cooldown > 0f)
+            slot.cooldown = Mathf.Max(0f, slot.cooldown - Time.deltaTime);
     }
 
     private void TryCastOrQueue(Skill skill)
@@ -88,29 +111,28 @@ public class PlayerSkillManager : MonoBehaviour
         skill.Cast(combat);
     }
 
+    private SkillSlot FindSlot(Skill skill)
+    {
+        foreach (SkillSlot slot in slots)
+        {
+            if (slot.skill == skill)
+                return slot;
+        }
+
+        return null;
+    }
+
     public float GetRemainingCooldown(Skill skill)
     {
-        if (skill == autoAttack)
-            return skill1Cooldown;
-
-        if (skill == powerStrike)
-            return skill2Cooldown;
-
-        if (skill == stomp)
-            return skill3Cooldown;
-
-        return float.PositiveInfinity;
+        SkillSlot slot = FindSlot(skill);
+        return slot != null ? slot.cooldown : float.PositiveInfinity;
     }
 
     public void StartCooldown(Skill skill)
     {
-        if (skill == autoAttack)
-            skill1Cooldown = skill.cooldown;
+        SkillSlot slot = FindSlot(skill);
 
-        else if (skill == powerStrike)
-            skill2Cooldown = skill.cooldown;
-
-        else if (skill == stomp)
-            skill3Cooldown = skill.cooldown;
+        if (slot != null)
+            slot.cooldown = skill.cooldown;
     }
 }

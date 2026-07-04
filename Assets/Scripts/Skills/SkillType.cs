@@ -1,6 +1,6 @@
 public enum SkillType
 {
-    AutoAttack,
-    PowerStrike,
-    Stomp
+    BasicAttack,
+    PowerAttack,
+    Finisher
 }

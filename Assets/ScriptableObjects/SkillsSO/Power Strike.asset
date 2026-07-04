@@ -17,12 +17,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   requiresTarget: 1
   lockMovementDuringCast: 1
-  cooldown: 4
+  cooldown: 6
   range: 1.2
-  manaCost: 0
   damageMultiplier: 2.5
-  momentumGenerated: 2
-  momentumCost: 0
+  resourceGenerated: 2
+  resourceCost: 0
   hitVFX: {fileID: 133553090695271686, guid: cf3d17977cbce2f4ebba086031033c3f, type: 3}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: PowerStrike

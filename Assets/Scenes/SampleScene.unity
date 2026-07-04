@@ -9309,6 +9309,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   healthText: {fileID: 175215639}
+  respawnPoint: {fileID: 900318991}
+  respawnDelay: 3
 --- !u!114 &900318981
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9339,7 +9341,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64b9799b9378d20468f54680916489ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ResourceManager
-  maxMomentum: 6
+  resourceName: Momentum
+  maxResource: 6
+--- !u!1 &900318990
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 900318991}
+  m_Layer: 0
+  m_Name: PlayerSpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &900318991
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 900318990}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.51, y: 2.2, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &923783316
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11244,6 +11278,7 @@ GameObject:
   - component: {fileID: 1271614502}
   - component: {fileID: 1271614501}
   - component: {fileID: 1271614500}
+  - component: {fileID: 1271614510}
   m_Layer: 6
   m_Name: Orc
   m_TagString: Enemy
@@ -11311,8 +11346,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_Health
   expReward: 3
-  maxHealth: 10
-  currentHealth: 10
+  maxHealth: 500
+  currentHealth: 500
   healthSlider: {fileID: 2071415888}
 --- !u!114 &1271614504
 MonoBehaviour:
@@ -11499,6 +11534,27 @@ Transform:
   - {fileID: 1672573052}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1271614510
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1271614499}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3a9c2e1d4b8f6a0c5e3b7d9a1f4c62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Enemy_RangedAttack
+  telegraphInterval: 4
+  telegraphDuration: 1
+  throwTravelTime: 0.2
+  damage: 40
+  areaRadius: 1.5
+  playerFeetOffset: {x: 0, y: -0.48}
+  playerHitboxSize: {x: 0.3, y: 0.05}
+  telegraphPrefab: {fileID: 0}
+  projectilePrefab: {fileID: 0}
 --- !u!1 &1279369579
 GameObject:
   m_ObjectHideFlags: 0
@@ -12520,8 +12576,8 @@ MonoBehaviour:
   intelligence: 5
   damage: 10
   moveSpeed: 3
-  maxHealth: 10
-  currentHealth: 10
+  maxHealth: 40
+  currentHealth: 40
   criticalChance: 0
   criticalDamage: 100
 --- !u!4 &1534014709
@@ -23782,3 +23838,4 @@ SceneRoots:
   - {fileID: 4515926141295827855}
   - {fileID: 1991987128}
   - {fileID: 608479316}
+  - {fileID: 900318991}

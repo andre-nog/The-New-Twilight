@@ -8,10 +8,10 @@ public class VillagerMomentumPassive : Passive
 
     public override float ModifyDamageMultiplier(Player_Combat combat, Skill skill)
     {
-        if (skill.skillType != SkillType.AutoAttack)
+        if (skill.skillType != SkillType.BasicAttack)
             return 1f;
 
-        if (combat.ResourceManager.CurrentMomentum < combat.ResourceManager.MaxMomentum)
+        if (combat.ResourceManager.CurrentResource < combat.ResourceManager.MaxResource)
             return 1f;
 
         return fullMomentumBonus;

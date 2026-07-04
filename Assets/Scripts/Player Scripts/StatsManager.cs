@@ -40,6 +40,14 @@ public class StatsManager : MonoBehaviour
         Instance = this;
     }
 
+    // Recompilar scripts no Editor zera campos static (domain reload) sem rodar Awake()
+    // de novo para objetos que já existiam na cena — só OnEnable roda. Sem isso, Instance
+    // fica null até a cena recarregar de verdade, derrubando quem depende dele.
+    private void OnEnable()
+    {
+        Instance = this;
+    }
+
     private void OnDestroy()
     {
         if (Instance == this)
@@ -51,6 +59,12 @@ public class StatsManager : MonoBehaviour
         currentHealth += amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
 
+        OnStatsChanged?.Invoke();
+    }
+
+    public void FullHeal()
+    {
+        currentHealth = maxHealth;
         OnStatsChanged?.Invoke();
     }
 

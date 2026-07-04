@@ -11,7 +11,7 @@ public class StompSkill : Skill
 
     public override void ExecuteEffect(Player_Combat combat)
     {
-        int momentum = combat.ResourceManager.ConsumeAllMomentum();
+        int momentum = combat.ResourceManager.ConsumeAllResource();
 
         float multiplier = 1f + (momentum * momentumScaling);
 

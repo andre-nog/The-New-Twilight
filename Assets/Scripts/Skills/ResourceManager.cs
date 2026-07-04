@@ -1,56 +1,60 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class ResourceManager : MonoBehaviour
 {
-    [Header("Momentum")]
+    [Header("Resource")]
+    public string resourceName = "Momentum";
+
+    [FormerlySerializedAs("maxMomentum")]
     [SerializeField]
-    private int maxMomentum = 6;
+    private int maxResource = 6;
 
-    public int CurrentMomentum { get; private set; }
+    public int CurrentResource { get; private set; }
 
-    public int MaxMomentum => maxMomentum;
-    public event Action OnMomentumChanged;
+    public int MaxResource => maxResource;
+    public event Action OnResourceChanged;
 
-    public void AddMomentum(int amount)
+    public void AddResource(int amount)
     {
-        SetMomentum(CurrentMomentum + amount);
+        SetResource(CurrentResource + amount);
     }
 
-    public bool HasMomentum(int amount)
+    public bool HasResource(int amount)
     {
-        return CurrentMomentum >= amount;
+        return CurrentResource >= amount;
     }
 
-    public bool SpendMomentum(int amount)
+    public bool SpendResource(int amount)
     {
-        if (!HasMomentum(amount))
+        if (!HasResource(amount))
             return false;
 
-        SetMomentum(CurrentMomentum - amount);
+        SetResource(CurrentResource - amount);
         return true;
     }
 
-    public int ConsumeAllMomentum()
+    public int ConsumeAllResource()
     {
-        int consumed = CurrentMomentum;
-        SetMomentum(0);
+        int consumed = CurrentResource;
+        SetResource(0);
         return consumed;
     }
 
-    public void ResetMomentum()
+    public void ResetResource()
     {
-        SetMomentum(0);
+        SetResource(0);
     }
 
-    private void SetMomentum(int value)
+    private void SetResource(int value)
     {
-        int newValue = Mathf.Clamp(value, 0, maxMomentum);
+        int newValue = Mathf.Clamp(value, 0, maxResource);
 
-        if (newValue == CurrentMomentum)
+        if (newValue == CurrentResource)
             return;
 
-        CurrentMomentum = newValue;
-        OnMomentumChanged?.Invoke();
+        CurrentResource = newValue;
+        OnResourceChanged?.Invoke();
     }
 }

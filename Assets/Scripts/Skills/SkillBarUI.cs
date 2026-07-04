@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,14 +9,16 @@ public class SkillBarUI : MonoBehaviour
     private static Sprite runtimeSprite;
 
     private PlayerSkillManager skillManager;
+    private ResourceManager resourceManager;
     private SkillSlotUI[] slots;
+    private Image[] momentumSegments;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void CreateForCurrentScene()
     {
-        PlayerSkillManager manager = FindFirstObjectByType<PlayerSkillManager>();
+        PlayerSkillManager manager = FindAnyObjectByType<PlayerSkillManager>();
 
-        if (manager == null || FindFirstObjectByType<SkillBarUI>() != null)
+        if (manager == null || FindAnyObjectByType<SkillBarUI>() != null)
             return;
 
         GameObject canvasObject = new("Skill Bar Canvas");
@@ -30,6 +33,17 @@ public class SkillBarUI : MonoBehaviour
 
         SkillBarUI skillBar = canvasObject.AddComponent<SkillBarUI>();
         skillBar.Build(manager);
+
+        MomentumUI legacyMomentumUI = FindAnyObjectByType<MomentumUI>();
+
+        if (legacyMomentumUI != null)
+            legacyMomentumUI.gameObject.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (resourceManager != null)
+            resourceManager.OnResourceChanged -= RefreshMomentum;
     }
 
     private void Update()
@@ -44,13 +58,16 @@ public class SkillBarUI : MonoBehaviour
     private void Build(PlayerSkillManager manager)
     {
         skillManager = manager;
+        resourceManager = manager.GetComponent<ResourceManager>();
+
+        IReadOnlyList<Skill> equippedSkills = manager.EquippedSkills;
 
         RectTransform bar = CreateUIObject("Skill Bar", transform);
         bar.anchorMin = new Vector2(0.5f, 0f);
         bar.anchorMax = new Vector2(0.5f, 0f);
         bar.pivot = new Vector2(0.5f, 0f);
         bar.anchoredPosition = new Vector2(0f, 28f);
-        bar.sizeDelta = new Vector2(SlotSize * 3f + 32f, SlotSize + 16f);
+        bar.sizeDelta = new Vector2(SlotSize * equippedSkills.Count + 32f, SlotSize + 16f);
 
         Image barBackground = bar.gameObject.AddComponent<Image>();
         barBackground.sprite = GetRuntimeSprite();
@@ -65,12 +82,91 @@ public class SkillBarUI : MonoBehaviour
         layout.childForceExpandWidth = false;
         layout.childForceExpandHeight = false;
 
-        slots = new[]
+        slots = new SkillSlotUI[equippedSkills.Count];
+        for (int i = 0; i < equippedSkills.Count; i++)
+            slots[i] = CreateSlot(bar, equippedSkills[i], (i + 1).ToString());
+
+        BuildMomentumBar();
+    }
+
+    private void BuildMomentumBar()
+    {
+        if (resourceManager == null || resourceManager.MaxResource <= 0)
+            return;
+
+        const float segmentWidth = 34f;
+        const float segmentHeight = 18f;
+        const float spacing = 5f;
+        const float horizontalPadding = 8f;
+
+        int segmentCount = resourceManager.MaxResource;
+        float barWidth =
+            segmentCount * segmentWidth +
+            (segmentCount - 1) * spacing +
+            horizontalPadding * 2f;
+
+        RectTransform momentumBar = CreateUIObject("Momentum Bar", transform);
+        momentumBar.anchorMin = new Vector2(0.5f, 0f);
+        momentumBar.anchorMax = new Vector2(0.5f, 0f);
+        momentumBar.pivot = new Vector2(0.5f, 0f);
+        momentumBar.anchoredPosition = new Vector2(0f, 128f);
+        momentumBar.sizeDelta = new Vector2(barWidth, segmentHeight + 12f);
+
+        Image background = momentumBar.gameObject.AddComponent<Image>();
+        background.sprite = GetRuntimeSprite();
+        background.color = new Color(0.04f, 0.05f, 0.07f, 0.85f);
+
+        HorizontalLayoutGroup layout = momentumBar.gameObject.AddComponent<HorizontalLayoutGroup>();
+        layout.padding = new RectOffset(
+            Mathf.RoundToInt(horizontalPadding),
+            Mathf.RoundToInt(horizontalPadding),
+            6,
+            6);
+        layout.spacing = spacing;
+        layout.childAlignment = TextAnchor.MiddleCenter;
+        layout.childControlWidth = false;
+        layout.childControlHeight = false;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+
+        momentumSegments = new Image[segmentCount];
+
+        for (int i = 0; i < segmentCount; i++)
         {
-            CreateSlot(bar, manager.autoAttack, "1"),
-            CreateSlot(bar, manager.powerStrike, "2"),
-            CreateSlot(bar, manager.stomp, "3")
-        };
+            RectTransform segment = CreateUIObject($"Momentum {i + 1}", momentumBar);
+            segment.sizeDelta = new Vector2(segmentWidth, segmentHeight);
+
+            LayoutElement layoutElement = segment.gameObject.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = segmentWidth;
+            layoutElement.preferredHeight = segmentHeight;
+
+            Image image = segment.gameObject.AddComponent<Image>();
+            image.sprite = GetRuntimeSprite();
+            image.raycastTarget = false;
+
+            Outline outline = segment.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.65f, 0.7f, 0.8f, 0.8f);
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            momentumSegments[i] = image;
+        }
+
+        resourceManager.OnResourceChanged += RefreshMomentum;
+        RefreshMomentum();
+    }
+
+    private void RefreshMomentum()
+    {
+        if (resourceManager == null || momentumSegments == null)
+            return;
+
+        for (int i = 0; i < momentumSegments.Length; i++)
+        {
+            bool filled = i < resourceManager.CurrentResource;
+            momentumSegments[i].color = filled
+                ? new Color(1f, 0.64f, 0.12f, 1f)
+                : new Color(0.16f, 0.18f, 0.22f, 1f);
+        }
     }
 
     private static SkillSlotUI CreateSlot(Transform parent, Skill skill, string key)
@@ -119,7 +215,7 @@ public class SkillBarUI : MonoBehaviour
         nameText.rectTransform.pivot = new Vector2(0.5f, 0f);
         nameText.rectTransform.anchoredPosition = new Vector2(0f, 4f);
         nameText.rectTransform.sizeDelta = new Vector2(-8f, 20f);
-        nameText.enableWordWrapping = false;
+        nameText.textWrappingMode = TextWrappingModes.NoWrap;
 
         TMP_Text cooldownText = CreateText(
             "Cooldown Text",

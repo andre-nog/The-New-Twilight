@@ -80,6 +80,8 @@ O GDD original previa Rage/Fúria para o Warrior. Momentum está sendo usado no 
 
 Uma barra runtime exibe as habilidades `1`, `2` e `3` no centro inferior da tela. Cada slot mostra nome, tecla, ícone quando disponível, máscara radial e contagem regressiva de cooldown.
 
+Logo acima dela, uma barra visual divide o Momentum em seis segmentos. Cada segmento preenchido representa um ponto acumulado e se apaga quando o recurso é gasto. Essa barra substitui o contador numérico de Momentum durante o jogo.
+
 ## 6. Classes e progressão
 
 ### Progressão planejada
@@ -144,14 +146,15 @@ Idle → Chasing → Attacking
 - detecção do jogador por raio;
 - perseguição via NavMesh;
 - alcance e cooldown de ataque;
-- abandono da perseguição por distância do spawn;
+- abandono da perseguição por distância do próprio spawn (o inimigo desiste quando ele mesmo já perseguiu longe demais de onde nasceu, não quando o jogador está longe desse ponto);
 - retorno ao ponto inicial;
 - recuperação de vida após retornar;
 - recompensa de experiência ao morrer;
 - barra de vida e dano flutuante;
-- ordenação visual baseada na posição Y.
+- ordenação visual baseada na posição Y;
+- respawn após morrer, através de um `EnemySpawner` reutilizável com um intervalo configurável e uma opção para desligar o respawn (pensada para dungeons, que não devem repor inimigos).
 
-O protótipo atual usa um Orc corpo a corpo. Arqueiros, magos, elites e chefes estão planejados.
+O protótipo atual usa um Orc corpo a corpo, que agora também possui uma habilidade telegrafada à distância: a cada 3 segundos de engajamento, ele marca a posição do jogador com uma área vermelha no chão, fica parado por 1 segundo e então arremessa algo nessa área — só quem ainda estiver dentro dela no momento do impacto toma dano, permitindo que o jogador desvie saindo a tempo. Arqueiros, magos, elites e chefes estão planejados.
 
 ## 9. Estrutura de progressão de conteúdo
 
@@ -205,13 +208,14 @@ Não há persistência de inventário ou equipamentos entre sessões.
 
 - vida atual e máxima;
 - experiência e nível;
-- Momentum atual e máximo;
+- Momentum segmentado em seis unidades;
 - painel de atributos;
 - inventário e equipamentos;
 - tooltips;
 - barra de habilidades e cooldowns;
 - barras de vida dos inimigos;
-- dano flutuante normal e crítico.
+- dano flutuante normal e crítico;
+- tela de morte com contagem regressiva até o respawn.
 
 O input `ToggleStats` está associado à tecla `C`, mas a abertura e o fechamento do painel de atributos ainda precisam ser conectados.
 
@@ -241,6 +245,7 @@ A experiência do MVP termina após o primeiro chefe. Novas classes, sistema com
 - Cena principal do build: `Assets/Scenes/SampleScene.unity`.
 - Cena `Teste.unity`: ambiente mínimo de teste.
 - Habilidades, passivas e itens definidos por ScriptableObjects.
+- Sistema de habilidades e de recurso de combate generalizados internamente (recurso nomeável via `ResourceManager`, categorias de skill reutilizáveis via `SkillType`) para suportar futuras classes sem duplicar código.
 
 ## 14. Matriz de implementação
 
@@ -261,7 +266,8 @@ A experiência do MVP termina após o primeiro chefe. Novas classes, sistema com
 | Coleta de recursos | Planejado |
 | Crafting e aprimoramento | Planejado |
 | Dungeons, elites e chefes | Planejado |
-| Morte, game over e respawn | Planejado |
+| Morte e respawn do jogador | Implementado no protótipo |
+| Respawn de inimigos | Implementado no protótipo (exemplo) |
 | Salvamento e carregamento | Planejado |
 
 ## 15. Decisões de design pendentes
@@ -269,7 +275,7 @@ A experiência do MVP termina após o primeiro chefe. Novas classes, sistema com
 - Momentum permanecerá com o Villager, será transferido ao Warrior ou será renomeado para Rage?
 - Como Strength, Defense, Agility e Intelligence afetam as fórmulas?
 - Quais atributos são ganhos ao subir de nível e ao promover uma classe?
-- Como funcionam morte, respawn e penalidades?
+- Morte e respawn do jogador já funcionam (sem penalidade, cura total e reposicionamento após alguns segundos); ainda falta decidir se haverá alguma penalidade por morrer.
 - Qual será a estrutura de quests e recompensas?
 - Como funcionarão crafting e aprimoramento?
 - Quais requisitos liberam a primeira dungeon?

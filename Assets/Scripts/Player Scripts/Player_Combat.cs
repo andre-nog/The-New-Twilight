@@ -98,8 +98,8 @@ public class Player_Combat : MonoBehaviour
             FaceTarget(attackTarget);
         }
 
-        if (currentSkill.momentumCost > 0 &&
-            !resourceManager.SpendMomentum(currentSkill.momentumCost))
+        if (currentSkill.resourceCost > 0 &&
+            !resourceManager.SpendResource(currentSkill.resourceCost))
             return;
 
         skillManager.StartCooldown(currentSkill);
@@ -142,8 +142,8 @@ public class Player_Combat : MonoBehaviour
             CancelMoveToAttack();
         }
 
-        // Verifica se há Momentum suficiente
-        if (!resourceManager.HasMomentum(skill.momentumCost))
+        // Verifica se há recurso suficiente
+        if (!resourceManager.HasResource(skill.resourceCost))
             return;
 
         currentSkill = skill;
@@ -219,9 +219,9 @@ public class Player_Combat : MonoBehaviour
     {
         currentSkill.ExecuteEffect(this);
 
-        if (currentSkill.momentumGenerated > 0)
+        if (currentSkill.resourceGenerated > 0)
         {
-            resourceManager.AddMomentum(currentSkill.momentumGenerated);
+            resourceManager.AddResource(currentSkill.resourceGenerated);
         }
     }
     public void ReleaseMovement()

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public abstract class Skill : ScriptableObject
 {
@@ -12,12 +13,13 @@ public abstract class Skill : ScriptableObject
     public bool lockMovementDuringCast = false;
     public float cooldown;
     public float range;
-    public int manaCost;
     public float damageMultiplier = 1f;
 
-    [Header("Momentum")]
-    public int momentumGenerated;
-    public int momentumCost;
+    [Header("Resource")]
+    [FormerlySerializedAs("momentumGenerated")]
+    public int resourceGenerated;
+    [FormerlySerializedAs("momentumCost")]
+    public int resourceCost;
     
     [Header("Visual Effects")]
     public GameObject hitVFX;

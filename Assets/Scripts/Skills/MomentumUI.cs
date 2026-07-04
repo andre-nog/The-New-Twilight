@@ -8,19 +8,19 @@ public class MomentumUI : MonoBehaviour
 
     private void OnEnable()
     {
-        resourceManager.OnMomentumChanged += Refresh;
+        resourceManager.OnResourceChanged += Refresh;
         Refresh();
     }
 
     private void OnDisable()
     {
         if (resourceManager != null)
-            resourceManager.OnMomentumChanged -= Refresh;
+            resourceManager.OnResourceChanged -= Refresh;
     }
 
     private void Refresh()
     {
         momentumText.text =
-            $"Momentum: {resourceManager.CurrentMomentum}/{resourceManager.MaxMomentum}";
+            $"{resourceManager.resourceName}: {resourceManager.CurrentResource}/{resourceManager.MaxResource}";
     }
 }
