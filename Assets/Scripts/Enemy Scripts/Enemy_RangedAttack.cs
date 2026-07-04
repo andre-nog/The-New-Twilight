@@ -9,7 +9,8 @@ public class Enemy_RangedAttack : MonoBehaviour
     public float throwTravelTime = 0.2f;
 
     [Header("Gameplay")]
-    public int damage = 1;
+    [Tooltip("Multiplicador do ataque à distância sobre o Attack Power do arquétipo.")]
+    public float skillMultiplier = 1f;
     public float areaRadius = 1.5f;
 
     [Header("Ponto de contato do jogador")]
@@ -36,12 +37,22 @@ public class Enemy_RangedAttack : MonoBehaviour
     private float stateTimer;
     private Vector3 targetPosition;
     private Vector3 throwOrigin;
+
+    // Instâncias reusadas por inimigo (SetActive em vez de Instantiate/Destroy por
+    // ataque) — cada inimigo tem no máximo um telégrafo e um projétil ativos.
     private GameObject telegraphInstance;
     private GameObject projectileInstance;
+    private SpriteRenderer telegraphSprite;   // só preenchido no placeholder (prefab fica como veio)
+    private SpriteRenderer projectileSprite;
+
+    // O placeholder é sempre o mesmo círculo branco — a cor vai no SpriteRenderer.color.
+    // Gerar a textura pixel a pixel a cada ataque era o maior custo de GC do ranged.
+    private static Sprite circleSprite;
 
     private Enemy_Movement enemyMovement;
     private NavMeshAgent agent;
     private SpriteRenderer bodySprite;
+    private EnemyStats stats;
 
     // Sorting layer do alvo atual (o jogador pode estar em uma Sorting Layer diferente
     // da do inimigo), para o telégrafo/projétil desenharem na camada certa.
@@ -52,6 +63,7 @@ public class Enemy_RangedAttack : MonoBehaviour
         enemyMovement = GetComponent<Enemy_Movement>();
         agent = GetComponent<NavMeshAgent>();
         bodySprite = GetComponent<SpriteRenderer>();
+        stats = GetComponent<EnemyStats>();
     }
 
     private void OnDestroy()
@@ -126,7 +138,7 @@ public class Enemy_RangedAttack : MonoBehaviour
             agent.velocity = Vector3.zero;
         }
 
-        telegraphInstance = CreateTelegraph(targetPosition);
+        ShowTelegraph(targetPosition);
     }
 
     private void TickTelegraphing()
@@ -137,13 +149,13 @@ public class Enemy_RangedAttack : MonoBehaviour
             return;
 
         if (telegraphInstance != null)
-            Destroy(telegraphInstance);
+            telegraphInstance.SetActive(false);
 
         throwOrigin = transform.position;
         stateTimer = throwTravelTime;
         state = State.Throwing;
 
-        projectileInstance = CreateProjectile(throwOrigin);
+        ShowProjectile(throwOrigin);
     }
 
     private void TickThrowing()
@@ -161,7 +173,7 @@ public class Enemy_RangedAttack : MonoBehaviour
             return;
 
         if (projectileInstance != null)
-            Destroy(projectileInstance);
+            projectileInstance.SetActive(false);
 
         ResolveDamage(targetPosition);
 
@@ -183,10 +195,21 @@ public class Enemy_RangedAttack : MonoBehaviour
         if (!CircleIntersectsBox(position, areaRadius, GetFeetPosition(player), playerHitboxSize))
             return;
 
-        PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+        IDamageable target = player.GetComponent<IDamageable>();
 
-        if (playerHealth != null)
-            playerHealth.ChangeHealth(-damage);
+        if (target == null || !target.IsAlive)
+            return;
+
+        // Mesmo pipeline do jogador — crítico, variância e mitigação por Armor.
+        DamageResult result = DamageCalculator.Calculate(
+            stats.AttackPower,
+            skillMultiplier,
+            1f,
+            stats.CriticalChance,
+            stats.CriticalDamage,
+            target.Armor);
+
+        target.TakeDamage(result);
     }
 
     private static bool CircleIntersectsBox(Vector2 circleCenter, float radius, Vector2 boxCenter, Vector2 boxSize)
@@ -246,48 +269,81 @@ public class Enemy_RangedAttack : MonoBehaviour
         return playerObject != null ? playerObject.transform : null;
     }
 
-    private GameObject CreateTelegraph(Vector3 position)
+    private void ShowTelegraph(Vector3 position)
     {
-        if (telegraphPrefab != null)
-            return Instantiate(telegraphPrefab, position, Quaternion.identity);
+        if (telegraphInstance == null)
+        {
+            if (telegraphPrefab != null)
+            {
+                telegraphInstance = Instantiate(telegraphPrefab, position, Quaternion.identity);
+            }
+            else
+            {
+                telegraphInstance = CreatePlaceholderCircle(
+                    "Telegraph",
+                    areaRadius * 2f,
+                    new Color(1f, 0.15f, 0.1f, 0.55f),
+                    -1000000);
+                telegraphSprite = telegraphInstance.GetComponent<SpriteRenderer>();
+            }
+        }
 
-        return CreatePlaceholderCircle(
-            "Telegraph",
-            position,
-            areaRadius * 2f,
-            new Color(1f, 0.15f, 0.1f, 0.55f),
-            -1000000);
+        telegraphInstance.transform.position = position;
+
+        // A Sorting Layer do alvo pode mudar entre um ataque e outro.
+        if (telegraphSprite != null)
+            telegraphSprite.sortingLayerID = targetSortingLayerID;
+
+        telegraphInstance.SetActive(true);
     }
 
-    private GameObject CreateProjectile(Vector3 position)
+    private void ShowProjectile(Vector3 position)
     {
-        if (projectilePrefab != null)
-            return Instantiate(projectilePrefab, position, Quaternion.identity);
+        if (projectileInstance == null)
+        {
+            if (projectilePrefab != null)
+            {
+                projectileInstance = Instantiate(projectilePrefab, position, Quaternion.identity);
+            }
+            else
+            {
+                projectileInstance = CreatePlaceholderCircle(
+                    "Projectile",
+                    0.3f,
+                    new Color(0.25f, 0.15f, 0.1f, 1f),
+                    1000000);
+                projectileSprite = projectileInstance.GetComponent<SpriteRenderer>();
+            }
+        }
 
-        return CreatePlaceholderCircle(
-            "Projectile",
-            position,
-            0.3f,
-            new Color(0.25f, 0.15f, 0.1f, 1f),
-            1000000);
+        projectileInstance.transform.position = position;
+
+        if (projectileSprite != null)
+            projectileSprite.sortingLayerID = targetSortingLayerID;
+
+        projectileInstance.SetActive(true);
     }
 
-    private GameObject CreatePlaceholderCircle(string objectName, Vector3 position, float diameter, Color color, int sortingOrder)
+    private GameObject CreatePlaceholderCircle(string objectName, float diameter, Color color, int sortingOrder)
     {
         GameObject instance = new(objectName);
-        instance.transform.position = position;
         instance.transform.localScale = new Vector3(diameter, diameter, 1f);
 
         SpriteRenderer sprite = instance.AddComponent<SpriteRenderer>();
-        sprite.sprite = CreateCircleSprite(color);
-        sprite.sortingLayerID = targetSortingLayerID;
+        sprite.sprite = GetCircleSprite();
+        sprite.color = color;
         sprite.sortingOrder = sortingOrder;
 
         return instance;
     }
 
-    private static Sprite CreateCircleSprite(Color color)
+    // Círculo branco genérico, gerado uma única vez e compartilhado por todos os
+    // inimigos — cada uso tinta via SpriteRenderer.color.
+    private static Sprite GetCircleSprite()
     {
+        if (circleSprite != null)
+            return circleSprite;
+
         const int resolution = PlaceholderTextureResolution;
 
         Texture2D texture = new(resolution, resolution, TextureFormat.RGBA32, false);
@@ -303,21 +359,20 @@ public class Enemy_RangedAttack : MonoBehaviour
                 // Borda suave de ~2px para não ficar serrilhado.
                 float alpha = Mathf.Clamp01((radius - distance) / 2f);
 
-                Color pixel = color;
-                pixel.a *= alpha;
-
-                texture.SetPixel(x, y, pixel);
+                texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
             }
         }
 
         texture.Apply();
 
-        return Sprite.Create(
+        circleSprite = Sprite.Create(
             texture,
             new Rect(0f, 0f, resolution, resolution),
             new Vector2(0.5f, 0.5f),
             resolution,
             0,
             SpriteMeshType.FullRect);
+
+        return circleSprite;
     }
 }

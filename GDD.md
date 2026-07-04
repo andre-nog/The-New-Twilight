@@ -115,6 +115,8 @@ Deve exigir mais tomada de decisão por meio de um recurso de combate:
 
 O projeto já possui nível, experiência e crescimento da experiência necessária. A promoção de classe, o reinício de nível, os ganhos de atributos por nível e as árvores de especialização ainda não estão implementados.
 
+Subir de nível restaura HP e mana por completo — recompensa clássica de RPG que também evita morrer "no meio" de um level up durante o grind.
+
 ## 7. Atributos
 
 ### Implementado

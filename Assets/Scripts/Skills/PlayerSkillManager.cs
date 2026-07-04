@@ -5,14 +5,8 @@ using UnityEngine.InputSystem;
 public class PlayerSkillManager : MonoBehaviour
 {
     [Header("Input")]
-    public InputActionReference skill1;
-    public InputActionReference skill2;
-    public InputActionReference skill3;
-
-    [Header("Skills")]
-    public Skill autoAttack;
-    public Skill powerStrike;
-    public Skill stomp;
+    [Tooltip("Tecla de cada slot da barra — o slot N casa o input N com a skill N da classe atual. Adicionar um 4º slot = adicionar um input aqui e uma skill na classe.")]
+    [SerializeField] private List<InputActionReference> slotInputs = new();
 
     private class SkillSlot
     {
@@ -48,17 +42,52 @@ public class PlayerSkillManager : MonoBehaviour
         if (slots != null)
             return;
 
-        // Adicionar uma nova skill: adicione um par (input, skill) aqui.
-        slots = new[]
-        {
-            new SkillSlot { input = skill1, skill = autoAttack },
-            new SkillSlot { input = skill2, skill = powerStrike },
-            new SkillSlot { input = skill3, skill = stomp }
-        };
+        // O kit vem da classe atual — o StatsManager é o dono da classe (roda antes,
+        // DefaultExecutionOrder -100). Adicionar/trocar skill é editar o asset da
+        // classe, não este código.
+        ClassDefinitionSO currentClass = StatsManager.Instance != null
+            ? StatsManager.Instance.CurrentClass
+            : null;
 
-        equippedSkills = new Skill[slots.Length];
-        for (int i = 0; i < slots.Length; i++)
-            equippedSkills[i] = slots[i].skill;
+        List<Skill> skills = currentClass != null ? currentClass.defaultSkills : null;
+
+        int count = skills != null ? Mathf.Min(skills.Count, slotInputs.Count) : 0;
+
+        if (skills != null && skills.Count > slotInputs.Count)
+            Debug.LogWarning(
+                $"PlayerSkillManager: classe '{currentClass.name}' tem {skills.Count} skills mas só {slotInputs.Count} inputs de slot — as últimas ficam de fora.",
+                this);
+
+        slots = new SkillSlot[count];
+        equippedSkills = new Skill[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            slots[i] = new SkillSlot { input = slotInputs[i], skill = skills[i] };
+            equippedSkills[i] = skills[i];
+        }
+    }
+
+    // Hook da promoção de classe: depois de StatsManager.SetClass, chame isto para
+    // reconstruir a barra a partir do novo kit.
+    public void RebuildLoadout()
+    {
+        if (slots != null && isActiveAndEnabled)
+        {
+            foreach (SkillSlot slot in slots)
+                slot.input.action.Disable();
+        }
+
+        slots = null;
+        queuedSkill = null;
+
+        EnsureSlotsBuilt();
+
+        if (isActiveAndEnabled)
+        {
+            foreach (SkillSlot slot in slots)
+                slot.input.action.Enable();
+        }
     }
 
     private void OnEnable()

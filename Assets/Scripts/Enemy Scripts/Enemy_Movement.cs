@@ -17,6 +17,15 @@ public class Enemy_Movement : MonoBehaviour
     private float flipCooldownTimer; // NOVO
     private Rigidbody2D rb;
     private Transform player;
+
+    // Capturado junto com "player", na detecção — checagem de vida por frame,
+    // redundante ao evento PlayerHealth.OnPlayerDied. O evento cobre o caso comum,
+    // mas o leash (loseAggroRange) é medido a partir do SPAWN do inimigo, não da
+    // posição do jogador, então qualquer desaggro perdido por timing (ex.: evento
+    // disparado enquanto este componente está temporariamente desabilitado por
+    // outro script de ataque) deixaria o inimigo perseguir um alvo morto por uma
+    // distância grande. Essa checagem funciona mesmo se o evento falhar.
+    private IDamageable playerHealth;
     private int facingDirection = 1;
     private EnemyState enemyState;
     private Animator anim;
@@ -25,12 +34,16 @@ public class Enemy_Movement : MonoBehaviour
     private Enemy_Health enemyHealth;
     [SerializeField] private Transform healthBarTransform;
 
-    private void OnEnable()
+    // Awake/OnDestroy (não OnEnable/OnDisable): scripts de ataque (ex.: Enemy_RangedAttack)
+    // desabilitam este componente temporariamente durante telegraph/arremesso — se a
+    // inscrição fosse por OnEnable/OnDisable, o desaggro seria perdido caso o player
+    // morresse exatamente nessa janela, e o inimigo continuaria atacando um alvo morto.
+    private void Awake()
     {
         PlayerHealth.OnPlayerDied += ForceDeaggro;
     }
 
-    private void OnDisable()
+    private void OnDestroy()
     {
         PlayerHealth.OnPlayerDied -= ForceDeaggro;
     }
@@ -43,7 +56,14 @@ public class Enemy_Movement : MonoBehaviour
             return;
 
         player = null;
+        playerHealth = null;
         ChangeState(EnemyState.Returning);
+    }
+
+    // Alvo perdido (nulo) ou morto — mesmo critério usado nas duas situações.
+    private bool HasLiveTarget()
+    {
+        return player != null && (playerHealth == null || playerHealth.IsAlive);
     }
 
     void Start()
@@ -188,6 +208,18 @@ public class Enemy_Movement : MonoBehaviour
         // Já possui um alvo.
         if (player != null)
         {
+            // Alvo morreu — checagem redundante ao evento OnPlayerDied (ver
+            // comentário no campo playerHealth). Sem isso, um evento perdido faria
+            // o inimigo perseguir o "cadáver" até o leash de loseAggroRange, que é
+            // medido a partir do próprio spawn, não da posição do jogador.
+            if (!HasLiveTarget())
+            {
+                player = null;
+                playerHealth = null;
+                ChangeState(EnemyState.Returning);
+                return;
+            }
+
             float distance = Vector2.Distance(
                 transform.position,
                 player.position);
@@ -200,6 +232,7 @@ public class Enemy_Movement : MonoBehaviour
             if (distanceFromSpawn > loseAggroRange)
             {
                 player = null;
+                playerHealth = null;
                 ChangeState(EnemyState.Returning);
                 return;
             }
@@ -241,6 +274,7 @@ public class Enemy_Movement : MonoBehaviour
         if (hit != null)
         {
             player = hit.transform;
+            playerHealth = hit.GetComponent<IDamageable>();
             ChangeState(EnemyState.Chasing);
         }
     }
@@ -325,6 +359,7 @@ public class Enemy_Movement : MonoBehaviour
             StopMoving();
 
             player = null;
+            playerHealth = null;
             attackCooldownTimer = 0;
 
             if (enemyHealth != null)
@@ -336,8 +371,13 @@ public class Enemy_Movement : MonoBehaviour
 
     public void EndAttack()
     {
-        if (player == null)
+        // Cobre o caso do próprio golpe ter matado o jogador (Attack() já roda antes
+        // deste evento, no mesmo clipe) e qualquer outro timing em que o alvo tenha
+        // morrido durante a animação de ataque.
+        if (!HasLiveTarget())
         {
+            player = null;
+            playerHealth = null;
             ChangeState(EnemyState.Returning);
             return;
         }
@@ -349,6 +389,7 @@ public class Enemy_Movement : MonoBehaviour
         if (distanceFromSpawn > loseAggroRange)
         {
             player = null;
+            playerHealth = null;
             ChangeState(EnemyState.Returning);
             return;
         }

@@ -1,5 +1,8 @@
 using UnityEngine;
 using UnityEngine.Serialization;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public abstract class Skill : ScriptableObject
 {
@@ -7,6 +10,28 @@ public abstract class Skill : ScriptableObject
     public string skillName;
     public SkillType skillType;
     public Sprite icon;
+
+    // Id estável — hoje o loadout vem de ClassDefinitionSO.defaultSkills (referência
+    // direta), então nada ainda consome isto. Preparado para o dia em que o save
+    // precisar referenciar skills por id (loadout customizado, especializações).
+    [SerializeField, HideInInspector] private string id;
+    public string Id => id;
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (!string.IsNullOrEmpty(id))
+            return;
+
+        string path = AssetDatabase.GetAssetPath(this);
+
+        if (string.IsNullOrEmpty(path))
+            return;
+
+        id = AssetDatabase.AssetPathToGUID(path);
+        EditorUtility.SetDirty(this);
+    }
+#endif
 
     [Header("Gameplay")]
     public bool requiresTarget = true;
@@ -41,5 +66,7 @@ public abstract class Skill : ScriptableObject
         combat.UseSkill(this);
     }
 
-    public abstract void ExecuteEffect(Player_Combat combat);
+    // ctx carrega skill/alvo/multiplicador capturados no início do cast — efeitos
+    // derivam variações via ctx.WithExtraMultiplier em vez de mutar estado do combat.
+    public abstract void ExecuteEffect(Player_Combat combat, in CastContext ctx);
 }

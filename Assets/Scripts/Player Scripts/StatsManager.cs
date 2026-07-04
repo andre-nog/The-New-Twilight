@@ -8,29 +8,20 @@ public class StatsManager : MonoBehaviour
     public event Action OnStatsChanged;
 
     [Header("Class")]
-    [Tooltip("Define qual atributo primário gera Attack Power / Spell Power. Ainda não há sistema de classes — isso representa a classe atual até então existir.")]
-    public PrimaryAttribute primaryAttribute = PrimaryAttribute.Strength;
+    [Tooltip("Classe atual — dona do atributo primário, dos atributos de nível 1 e do crescimento por nível. Promoção de classe = SetClass() + PlayerSkillManager.RebuildLoadout().")]
+    [SerializeField] private ClassDefinitionSO currentClass;
+
+    public ClassDefinitionSO CurrentClass => currentClass;
 
     [Header("Level")]
     [Tooltip("Mudar isso recalcula os atributos como se você tivesse subido de nível até aqui, do zero (nível 1 + crescimento por nível abaixo) — funciona no Inspector, em Play ou fora dele, pra ajudar a balancear cada nível sem precisar farmar XP.")]
     [Min(1)]
     public int level = 1;
 
-    [Header("Primary Attributes (Bonus = equip/buff/passiva; Base é derivado do nível)")]
+    [Header("Primary Attributes (Bonus = equip/buff/passiva; Base é derivado do nível + classe)")]
     public PrimaryStat strength;
     public PrimaryStat agility;
     public PrimaryStat intelligence;
-
-    [Header("Primary Attributes - Nível 1")]
-    [SerializeField] private int baseStrength = 2;
-    [SerializeField] private int baseAgility = 4;
-    [SerializeField] private int baseIntelligence = 5;
-
-    [Header("Growth per Level")]
-    [Tooltip("Crescimento automático dos atributos primários a cada nível. Placeholder até existir curva de progressão por classe.")]
-    [SerializeField] private int strengthPerLevel = 1;
-    [SerializeField] private int agilityPerLevel = 1;
-    [SerializeField] private int intelligencePerLevel = 1;
 
     [Header("Secondary Stats - Baseline")]
     [Tooltip("Valor fixo antes de qualquer escala por atributo ou bônus externo.")]
@@ -202,11 +193,46 @@ public class StatsManager : MonoBehaviour
     // Chamado ao subir de nível — todo o crescimento é automático, o jogador não
     // distribui pontos. O crescimento em si é derivado de "level" dentro de
     // RecalculateStats, então aqui só precisa incrementar o nível.
+    // Subir de nível restaura HP e mana por completo (decisão de design — ver GDD).
     public void OnLevelUp()
     {
         level++;
 
         RecalculateStats();
+
+        currentHealth = MaxHealth;
+        currentMana = MaxMana;
+
+        OnStatsChanged?.Invoke();
+    }
+
+    // Hook da promoção de classe — troca a definição e re-deriva tudo do zero.
+    // Quem chamar deve também reconstruir o loadout (PlayerSkillManager.RebuildLoadout).
+    public void SetClass(ClassDefinitionSO newClass)
+    {
+        currentClass = newClass;
+
+        RecalculateStats();
+        OnStatsChanged?.Invoke();
+    }
+
+    // Usado pelo carregamento de save — define o nível diretamente (ao contrário de
+    // OnLevelUp, que só incrementa em 1) e recalcula os stats a partir dele.
+    public void SetLevel(int newLevel)
+    {
+        level = Mathf.Max(1, newLevel);
+
+        RecalculateStats();
+        OnStatsChanged?.Invoke();
+    }
+
+    // Usado pelo carregamento de save — define vida/mana atuais diretamente. Chamar
+    // depois de SetClass/SetLevel, para MaxHealth/MaxMana já refletirem o save antes do clamp.
+    public void SetVitals(int health, int mana)
+    {
+        currentHealth = Mathf.Clamp(health, 0, MaxHealth);
+        currentMana = Mathf.Clamp(mana, 0, MaxMana);
+
         OnStatsChanged?.Invoke();
     }
 
@@ -296,9 +322,18 @@ public class StatsManager : MonoBehaviour
     // o resto do jogo só lê as propriedades calculadas acima.
     private void RecalculateStats()
     {
-        // Base é sempre derivado do zero a partir do nível atual — simula todos os
-        // level ups de uma vez, então mudar "level" (no Inspector ou via OnLevelUp)
-        // já reflete o resultado final sem precisar repetir chamada por chamada.
+        // Base é sempre derivado do zero a partir do nível atual + classe — simula
+        // todos os level ups de uma vez, então mudar "level" (no Inspector ou via
+        // OnLevelUp) ou trocar de classe já reflete o resultado final direto.
+        // Fallbacks neutros caso a classe ainda não esteja atribuída na cena.
+        int baseStrength = currentClass != null ? currentClass.baseStrength : 1;
+        int baseAgility = currentClass != null ? currentClass.baseAgility : 1;
+        int baseIntelligence = currentClass != null ? currentClass.baseIntelligence : 1;
+        int strengthPerLevel = currentClass != null ? currentClass.strengthPerLevel : 1;
+        int agilityPerLevel = currentClass != null ? currentClass.agilityPerLevel : 1;
+        int intelligencePerLevel = currentClass != null ? currentClass.intelligencePerLevel : 1;
+        PrimaryAttribute primaryAttribute = currentClass != null ? currentClass.primaryAttribute : PrimaryAttribute.Strength;
+
         strength.Base = baseStrength + (level - 1) * strengthPerLevel;
         agility.Base = baseAgility + (level - 1) * agilityPerLevel;
         intelligence.Base = baseIntelligence + (level - 1) * intelligencePerLevel;

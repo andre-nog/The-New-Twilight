@@ -8,15 +8,13 @@ public class Player_Combat : MonoBehaviour
     public PlayerMovement playerMovement;
     public ResourceManager ResourceManager => resourceManager;
 
-    private GameObject attackTarget;
+    // Contexto do cast em andamento — escrito UMA vez por tentativa de cast
+    // (UseSkill) e lido pelos animation events. Substitui o trio mutável
+    // currentSkill/attackTarget/damageMultiplierBonus.
+    private CastContext pendingCast;
     private bool movingToAttack;
-    private Skill currentSkill;
     private PlayerSkillManager skillManager;
     private ResourceManager resourceManager;
-    private float damageMultiplierBonus = 1f;
-
-    [SerializeField]
-    private Passive[] passives;
 
     [SerializeField]
     private LayerMask enemyLayer;
@@ -26,7 +24,7 @@ public class Player_Combat : MonoBehaviour
 
     [SerializeField]
     private float debugRadius = 2.5f;
-    
+
 
     private void Awake()
     {
@@ -52,7 +50,7 @@ public class Player_Combat : MonoBehaviour
 
     private void MoveToTargetAndAttack()
     {
-        if (attackTarget == null)
+        if (pendingCast.Target == null)
         {
             CancelMoveToAttack();
             return;
@@ -60,9 +58,9 @@ public class Player_Combat : MonoBehaviour
 
         float distance = Vector2.Distance(
             transform.position,
-            attackTarget.transform.position);
+            pendingCast.Target.transform.position);
 
-        if (distance <= currentSkill.range)
+        if (distance <= pendingCast.Skill.range)
         {
             CancelMoveToAttack();
             ExecuteSkill();
@@ -70,7 +68,7 @@ public class Player_Combat : MonoBehaviour
         }
 
         playerMovement.MoveTo(
-            attackTarget.transform.position);
+            pendingCast.Target.transform.position);
     }
 
     private void FaceTarget(GameObject target)
@@ -87,46 +85,58 @@ public class Player_Combat : MonoBehaviour
     }
     private void ExecuteSkill()
     {
-        if (currentSkill == null)
+        Skill skill = pendingCast.Skill;
+
+        if (skill == null)
             return;
 
-        if (currentSkill.requiresTarget)
+        if (skill.requiresTarget)
         {
-            if (attackTarget == null)
+            if (pendingCast.Target == null)
                 return;
 
-            FaceTarget(attackTarget);
+            FaceTarget(pendingCast.Target);
         }
 
-        if (currentSkill.resourceCost > 0 &&
-            !resourceManager.SpendResource(currentSkill.resourceCost))
+        if (skill.resourceCost > 0 &&
+            !resourceManager.SpendResource(skill.resourceCost))
             return;
 
-        if (currentSkill.manaCost > 0 &&
-            !StatsManager.Instance.SpendMana(currentSkill.manaCost))
+        if (skill.manaCost > 0 &&
+            !StatsManager.Instance.SpendMana(skill.manaCost))
             return;
 
-        skillManager.StartCooldown(currentSkill);
+        skillManager.StartCooldown(skill);
 
         isAttacking = true;
 
-        if (currentSkill.lockMovementDuringCast)
+        if (skill.lockMovementDuringCast)
         {
             playerMovement.SetMovementLocked(true);
         }
 
-        anim.SetTrigger(currentSkill.animationTrigger);
+        anim.SetTrigger(skill.animationTrigger);
     }
-    private float GetPassiveDamageMultiplier()
+
+    // Passivas vêm da classe atual (ClassDefinitionSO) — trocar de classe troca
+    // as passivas junto, sem re-wiring no Inspector.
+    private float GetPassiveDamageMultiplier(Skill skill)
     {
+        ClassDefinitionSO currentClass = StatsManager.Instance != null
+            ? StatsManager.Instance.CurrentClass
+            : null;
+
+        if (currentClass == null || currentClass.passives == null)
+            return 1f;
+
         float multiplier = 1f;
 
-        foreach (Passive passive in passives)
+        foreach (Passive passive in currentClass.passives)
         {
             if (passive == null)
                 continue;
 
-            multiplier *= passive.ModifyDamageMultiplier(this, currentSkill);
+            multiplier *= passive.ModifyDamageMultiplier(this, skill);
         }
 
         return multiplier;
@@ -153,11 +163,10 @@ public class Player_Combat : MonoBehaviour
         if (!StatsManager.Instance.HasMana(skill.manaCost))
             return;
 
-        currentSkill = skill;
-
         // Skills que não precisam de alvo (ex.: Stomp)
-        if (!currentSkill.requiresTarget)
+        if (!skill.requiresTarget)
         {
+            pendingCast = new CastContext(skill, null);
             ExecuteSkill();
             return;
         }
@@ -167,13 +176,13 @@ public class Player_Combat : MonoBehaviour
         if (selectedTarget == null)
             return;
 
-        attackTarget = selectedTarget;
+        pendingCast = new CastContext(skill, selectedTarget);
 
         float distance = Vector2.Distance(
             transform.position,
-            attackTarget.transform.position);
+            selectedTarget.transform.position);
 
-        if (distance > currentSkill.range)
+        if (distance > skill.range)
         {
             movingToAttack = true;
             playerMovement.autoMoving = true;
@@ -183,23 +192,23 @@ public class Player_Combat : MonoBehaviour
         ExecuteSkill();
     }
 
-    private void DealDamage(Enemy_Health enemyHealth)
+    private void DealDamage(IDamageable target, in CastContext ctx)
     {
-        float offensivePower = currentSkill.damageSchool == DamageSchool.Magical
+        float offensivePower = ctx.Skill.damageSchool == DamageSchool.Magical
             ? StatsManager.Instance.SpellPower
             : StatsManager.Instance.AttackPower;
 
         DamageResult result = DamageCalculator.Calculate(
             offensivePower,
-            currentSkill.damageMultiplier,
-            damageMultiplierBonus * GetPassiveDamageMultiplier(),
+            ctx.Skill.damageMultiplier,
+            ctx.ExtraMultiplier * GetPassiveDamageMultiplier(ctx.Skill),
             StatsManager.Instance.CriticalChance,
             StatsManager.Instance.CriticalDamage,
-            enemyHealth.armor);
+            target.Armor);
 
-        enemyHealth.ChangeHealth(-result.FinalDamage, result.IsCritical);
+        target.TakeDamage(result);
     }
-    public void DealAreaDamage(float radius)
+    public void DealAreaDamage(float radius, in CastContext ctx)
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(
             transform.position,
@@ -208,65 +217,60 @@ public class Player_Combat : MonoBehaviour
 
         foreach (Collider2D hit in hits)
         {
-            Enemy_Health enemyHealth = hit.GetComponent<Enemy_Health>();
+            IDamageable target = hit.GetComponent<IDamageable>();
 
-            if (enemyHealth == null)
+            if (target == null || !target.IsAlive)
                 continue;
 
-            DealDamage(enemyHealth);
+            DealDamage(target, ctx);
         }
 
-        SpawnHitVFX(transform.position);
+        SpawnHitVFX(transform.position, ctx.Skill);
     }
     public void ExecuteSkillEffect()
     {
-        currentSkill.ExecuteEffect(this);
+        Skill skill = pendingCast.Skill;
 
-        if (currentSkill.resourceGenerated > 0)
+        if (skill == null)
+            return;
+
+        skill.ExecuteEffect(this, pendingCast);
+
+        if (skill.resourceGenerated > 0)
         {
-            resourceManager.AddResource(currentSkill.resourceGenerated);
+            resourceManager.AddResource(skill.resourceGenerated);
         }
     }
     public void ReleaseMovement()
     {
-        if (currentSkill.lockMovementDuringCast)
+        if (pendingCast.Skill != null && pendingCast.Skill.lockMovementDuringCast)
         {
             playerMovement.SetMovementLocked(false);
         }
     }
-
-    public void SetDamageMultiplierBonus(float multiplier)
+    public void DealDamageToTarget(in CastContext ctx)
     {
-        damageMultiplierBonus = multiplier;
-    }
-
-    public void ResetDamageMultiplierBonus()
-    {
-        damageMultiplierBonus = 1f;
-    }
-    public void DealDamageToTarget()
-    {
-        if (attackTarget == null)
+        if (ctx.Target == null)
             return;
 
-        Enemy_Health enemyHealth =
-            attackTarget.GetComponent<Enemy_Health>();
+        IDamageable target =
+            ctx.Target.GetComponent<IDamageable>();
 
-        if (enemyHealth == null)
+        if (target == null || !target.IsAlive)
             return;
 
-        DealDamage(enemyHealth);
+        DealDamage(target, ctx);
 
-        SpawnHitVFX(attackTarget.transform.position);
+        SpawnHitVFX(ctx.Target.transform.position, ctx.Skill);
     }
-    private void SpawnHitVFX(Vector3 position)
+    private void SpawnHitVFX(Vector3 position, Skill skill)
     {
-        if (currentSkill.hitVFX == null)
+        if (skill.hitVFX == null)
             return;
 
         Instantiate(
-            currentSkill.hitVFX,
-            position + currentSkill.hitVFXOffset,
+            skill.hitVFX,
+            position + skill.hitVFXOffset,
             Quaternion.identity);
     }
     public void FinishAttacking()

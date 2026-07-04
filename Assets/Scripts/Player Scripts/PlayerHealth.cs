@@ -3,14 +3,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PlayerHealth : MonoBehaviour
+public class PlayerHealth : MonoBehaviour, IDamageable
 {
     // Inimigos assinam isso pra desaggrar e voltar ao spawn assim que o player morre,
     // em vez de continuar perseguindo/atacando um alvo "morto" até o respawn.
     public static event Action OnPlayerDied;
 
-    public TMP_Text healthText;
-    public Transform respawnPoint;
     public float respawnDelay = 3f;
 
     private bool isDead;
@@ -34,6 +32,9 @@ public class PlayerHealth : MonoBehaviour
         playerCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.RegisterPlayer(transform);
     }
 
     private void OnEnable()
@@ -55,6 +56,14 @@ public class PlayerHealth : MonoBehaviour
             StatsManager.Instance.OnStatsChanged -= RefreshUI;
     }
 
+    // deathOverlay é um GameObject raiz solto (não é filho do player) — sem isso,
+    // destruir o player no respawn deixaria a tela de "Você morreu" travada pra sempre.
+    private void OnDestroy()
+    {
+        if (deathOverlay != null)
+            Destroy(deathOverlay);
+    }
+
     private void Update()
     {
         if (!isDead)
@@ -64,15 +73,33 @@ public class PlayerHealth : MonoBehaviour
         UpdateDeathText();
 
         if (respawnTimer <= 0f)
-            Respawn();
+            GameManager.Instance.RespawnPlayer();
+    }
+
+    // A vida em si mora no StatsManager (MaxHealth é derivado dos atributos) —
+    // este componente é a "porta de entrada" de dano do lado do jogador.
+    public float Armor => StatsManager.Instance != null ? StatsManager.Instance.Armor : 0f;
+    public bool IsAlive => !isDead;
+
+    public void TakeDamage(DamageResult result)
+    {
+        StatsManager.Instance.ChangeHealth(-result.FinalDamage);
+
+        // Laranja-avermelhado no crítico de inimigo, pra diferenciar do hit normal.
+        Color popupColor = result.IsCritical
+            ? new Color(1f, 0.45f, 0.1f)
+            : Color.red;
+
+        DamageManager.Instance.CreatePopup(
+            transform.position + Vector3.up * 0.5f,
+            result.FinalDamage,
+            popupColor);
     }
 
     public void ChangeHealth(int amount)
     {
         StatsManager.Instance.ChangeHealth(amount);
 
-        // Mesmo popup de dano flutuante que Enemy_Health já usa — só a cor muda
-        // (sempre vermelho, já que ataque de inimigo não tem crítico hoje).
         if (amount < 0)
         {
             DamageManager.Instance.CreatePopup(
@@ -84,8 +111,6 @@ public class PlayerHealth : MonoBehaviour
 
     private void RefreshUI()
     {
-        healthText.text = "HP: " + StatsManager.Instance.currentHealth + " / " + StatsManager.Instance.MaxHealth;
-
         if (StatsManager.Instance.currentHealth <= 0 && !isDead)
             Die();
     }
@@ -101,22 +126,6 @@ public class PlayerHealth : MonoBehaviour
         ShowDeathOverlay();
 
         OnPlayerDied?.Invoke();
-    }
-
-    private void Respawn()
-    {
-        isDead = false;
-
-        if (respawnPoint != null)
-            transform.position = respawnPoint.position;
-
-        ZeroVelocity();
-        StatsManager.Instance.FullHeal();
-        StatsManager.Instance.RestoreFullMana();
-
-        SetControlEnabled(true);
-        SetVisualEnabled(true);
-        HideDeathOverlay();
     }
 
     // Sem isso o player continuaria deslizando após morrer — o Rigidbody2D dele não
@@ -171,12 +180,6 @@ public class PlayerHealth : MonoBehaviour
 
         deathOverlay.SetActive(true);
         UpdateDeathText();
-    }
-
-    private void HideDeathOverlay()
-    {
-        if (deathOverlay != null)
-            deathOverlay.SetActive(false);
     }
 
     private void BuildDeathOverlay()

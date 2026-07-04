@@ -32,12 +32,30 @@ public class StatsUI : MonoBehaviour
 
     public void UpdateAllStats()
     {
-        statsSlots[0].SetValue(StatsManager.Instance.currentHealth);
-        statsSlots[1].SetValue(StatsManager.Instance.strength.Total);
-        statsSlots[2].SetValue(Mathf.RoundToInt(StatsManager.Instance.Armor));
-        statsSlots[3].SetValue(StatsManager.Instance.agility.Total);
-        statsSlots[4].SetValue(StatsManager.Instance.intelligence.Total);
-        statsSlots[5].SetValue(Mathf.RoundToInt(StatsManager.Instance.AttackPower));
-        statsSlots[6].SetValue(Mathf.RoundToInt(StatsManager.Instance.MoveSpeed));
+        StatsManager stats = StatsManager.Instance;
+
+        if (stats == null)
+            return;
+
+        // O array é preenchido no Inspector — se estiver menor que o esperado (slot
+        // ainda não criado/atribuído), atualiza o que der em vez de estourar.
+        int[] values =
+        {
+            stats.currentHealth,
+            stats.strength.Total,
+            Mathf.RoundToInt(stats.Armor),
+            stats.agility.Total,
+            stats.intelligence.Total,
+            Mathf.RoundToInt(stats.AttackPower),
+            Mathf.RoundToInt(stats.MoveSpeed)
+        };
+
+        int count = Mathf.Min(values.Length, statsSlots != null ? statsSlots.Length : 0);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (statsSlots[i] != null)
+                statsSlots[i].SetValue(values[i]);
+        }
     }
 }

@@ -1,37 +1,63 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Enemy_Health : MonoBehaviour
+[RequireComponent(typeof(EnemyStats))]
+public class Enemy_Health : MonoBehaviour, IDamageable
 {
-    public int expReward = 3;
-
     public delegate void MonsterDefeated(int exp);
     public static event MonsterDefeated OnMonsterDefeated;
 
-    public int maxHealth = 100;
-    public int currentHealth;
+    // Registro de inimigos vivos na cena — evita FindGameObjectsWithTag em quem
+    // precisa iterar todos (ex.: PlayerTargeting ao ciclar alvos com Tab).
+    public static readonly List<Enemy_Health> Active = new();
 
-    [Tooltip("Mitigação de dano recebido — a fórmula fica centralizada em DamageCalculator, não aqui.")]
-    public float armor = 0f;
+    public int currentHealth;
 
     public Slider healthSlider;
 
+    // maxHealth/armor/expReward saíram daqui — agora vêm do EnemyArchetypeSO via EnemyStats.
+    private EnemyStats stats;
+
+    public float Armor => stats.Armor;
+    public bool IsAlive => currentHealth > 0;
+
+    private void Awake()
+    {
+        stats = GetComponent<EnemyStats>();
+    }
+
+    private void OnEnable()
+    {
+        Active.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        Active.Remove(this);
+    }
+
     private void Start()
     {
-        currentHealth = maxHealth;
+        currentHealth = stats.MaxHealth;
 
         if (healthSlider != null)
         {
-            healthSlider.maxValue = maxHealth;
+            healthSlider.maxValue = stats.MaxHealth;
             healthSlider.value = currentHealth;
         }
+    }
+
+    public void TakeDamage(DamageResult result)
+    {
+        ChangeHealth(-result.FinalDamage, result.IsCritical);
     }
 
     public void ChangeHealth(int amount, bool critical = false)
     {
         currentHealth += amount;
 
-        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        currentHealth = Mathf.Clamp(currentHealth, 0, stats.MaxHealth);
 
         if (healthSlider != null)
             healthSlider.value = currentHealth;
@@ -52,14 +78,14 @@ public class Enemy_Health : MonoBehaviour
 
         if (currentHealth <= 0)
         {
-            OnMonsterDefeated?.Invoke(expReward);
+            OnMonsterDefeated?.Invoke(stats.ExpReward);
             Destroy(gameObject);
         }
     }
 
     public void ResetEnemy()
     {
-        currentHealth = maxHealth;
+        currentHealth = stats.MaxHealth;
 
         if (healthSlider != null)
             healthSlider.value = currentHealth;

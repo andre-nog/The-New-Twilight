@@ -1,10 +1,15 @@
 using UnityEngine;
+using UnityEngine.Pool;
 
 public class DamageManager : MonoBehaviour
 {
     public static DamageManager Instance;
 
     [SerializeField] private DamagePopup damagePopupPrefab;
+
+    // Popups aparecem a cada hit — reciclar via pool evita Instantiate/Destroy
+    // (e o lixo de GC correspondente) no caminho mais quente do combate.
+    private ObjectPool<DamagePopup> pool;
 
     private void Awake()
     {
@@ -17,6 +22,13 @@ public class DamageManager : MonoBehaviour
         Instance = this;
     }
 
+    // Recompilar scripts no Editor zera campos static/não-seriais (domain reload)
+    // sem rodar Awake() de novo — mesmo padrão dos outros managers.
+    private void OnEnable()
+    {
+        Instance = this;
+    }
+
     private void OnDestroy()
     {
         if (Instance == this)
@@ -25,12 +37,21 @@ public class DamageManager : MonoBehaviour
 
     public void CreatePopup(Vector3 position, int damage, Color color)
     {
-        DamagePopup popup = Instantiate(
-            damagePopupPrefab,
-            position,
-            Quaternion.identity
-        );
+        // Criado sob demanda (e não no Awake) porque domain reload zera o campo.
+        pool ??= new ObjectPool<DamagePopup>(
+            createFunc: () => Instantiate(damagePopupPrefab, transform),
+            actionOnGet: popup => popup.gameObject.SetActive(true),
+            actionOnRelease: popup => popup.gameObject.SetActive(false),
+            actionOnDestroy: popup => Destroy(popup.gameObject),
+            defaultCapacity: 16);
 
-        popup.Setup(damage, color);
+        DamagePopup popup = pool.Get();
+        popup.transform.SetPositionAndRotation(position, Quaternion.identity);
+        popup.Setup(damage, color, ReleasePopup);
+    }
+
+    private void ReleasePopup(DamagePopup popup)
+    {
+        pool.Release(popup);
     }
 }

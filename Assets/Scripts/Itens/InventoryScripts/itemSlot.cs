@@ -4,9 +4,14 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 public class ItemSlot : MonoBehaviour,
+    IItemSlot,
     IPointerClickHandler,
     IPointerEnterHandler,
-    IPointerExitHandler
+    IPointerExitHandler,
+    IBeginDragHandler,
+    IDragHandler,
+    IEndDragHandler,
+    IDropHandler
 {
     // ===== ITEM DATA =====
     public ItemSO item;
@@ -31,7 +36,13 @@ public class ItemSlot : MonoBehaviour,
     private InventoryManager inventoryManager;
     private EquipmentManager equipmentManager;
 
+    // Setada em OnBeginDrag; usada para suprimir o toggle de seleção do OnPointerClick
+    // que o EventSystem ainda dispara depois de um arrasto.
+    private bool wasDragged;
 
+    public ItemSO Item => item;
+    public bool IsEmpty => item == null;
+    public bool CanAccept(ItemSO otherItem) => true;
 
     private void Start()
     {
@@ -40,7 +51,7 @@ public class ItemSlot : MonoBehaviour,
 
         if (selectedShader != null)
             selectedShader.SetActive(false);
-        
+
     }
 
     public int AddItem(ItemSO item, int quantity)
@@ -96,6 +107,12 @@ public class ItemSlot : MonoBehaviour,
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (wasDragged)
+        {
+            wasDragged = false;
+            return;
+        }
+
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             OnLeftClick();
@@ -107,9 +124,85 @@ public class ItemSlot : MonoBehaviour,
         }
     }
 
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left)
+            return;
+
+        if (item == null)
+            return;
+
+        wasDragged = true;
+        InventoryDragController.Instance.BeginDrag(this, itemImage.sprite, eventData);
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (!InventoryDragController.Instance.IsDragging)
+            return;
+
+        InventoryDragController.Instance.UpdateGhostPosition(eventData);
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        InventoryDragController.Instance.EndDrag();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        InventoryDragController.Instance.TryDrop(this);
+    }
+
+    // Restaura um slot com quantidade exata já conhecida — usado pelo carregamento
+    // de save, que não deve passar pela lógica de "completar stack aos poucos" de
+    // AddItem (essa já sabe a quantidade final, não uma quantidade chegando aos poucos).
+    public void LoadItem(ItemSO item, int quantity)
+    {
+        this.item = item;
+        this.quantity = quantity;
+        isFull = !item.stackable || quantity >= maxNumberOfItems;
+
+        itemImage.sprite = item.itemSprite;
+        itemImage.enabled = true;
+
+        if (item.stackable)
+        {
+            quantityText.text = quantity.ToString();
+            quantityText.enabled = true;
+        }
+        else
+        {
+            quantityText.enabled = false;
+        }
+    }
+
+    public void Clear()
+    {
+        item = null;
+        quantity = 0;
+        isFull = false;
+
+        itemImage.enabled = false;
+        quantityText.enabled = false;
+
+        if (selectedShader != null)
+            selectedShader.SetActive(false);
+
+        thisItemSelected = false;
+    }
+
     public void ConsumeOneItem()
     {
-        quantity--;
+        ReduceQuantity(1);
+    }
+
+    // Reduz a quantidade em `amount` unidades, limpando o slot se chegar a zero ou
+    // menos. Usado pelo merge de stacks no drag-and-drop, onde a quantidade a remover
+    // da origem é a diferença entre o que foi movido e a sobra que não coube no destino.
+    public void ReduceQuantity(int amount)
+    {
+        quantity -= amount;
         isFull = false;
 
         if (quantity <= 0)
@@ -225,6 +318,9 @@ public class ItemSlot : MonoBehaviour,
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (item == null || TooltipManager.Instance == null)
+            return;
+
+        if (InventoryDragController.Instance != null && InventoryDragController.Instance.IsDragging)
             return;
 
         TooltipManager.Instance.Show(item);

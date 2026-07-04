@@ -1,10 +1,8 @@
 using UnityEngine;
 
+// Casca mantida só para preservar os .asset existentes (o GUID do script fica o
+// mesmo) — o comportamento mora em SingleTargetDamageSkill.
 [CreateAssetMenu(menuName = "Skills/Auto Attack")]
-public class AutoAttackSkill : Skill
+public class AutoAttackSkill : SingleTargetDamageSkill
 {
-    public override void ExecuteEffect(Player_Combat combat)
-    {
-        combat.DealDamageToTarget();
-    }
 }

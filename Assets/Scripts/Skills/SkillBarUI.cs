@@ -19,8 +19,9 @@ public class SkillBarUI : MonoBehaviour
     private TMP_Text manaBarText;
     private TMP_Text debugStatsText;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void CreateForCurrentScene()
+    // Chamado pelo GameManager.Start() — ordem de bootstrap explícita em vez de
+    // [RuntimeInitializeOnLoadMethod] autoexecutando antes de qualquer outra coisa.
+    public static void EnsureCreated()
     {
         PlayerSkillManager manager = FindAnyObjectByType<PlayerSkillManager>();
 
@@ -39,19 +40,50 @@ public class SkillBarUI : MonoBehaviour
 
         SkillBarUI skillBar = canvasObject.AddComponent<SkillBarUI>();
         skillBar.Build(manager);
+    }
 
-        MomentumUI legacyMomentumUI = FindAnyObjectByType<MomentumUI>();
+    // Chamado pelo GameManager.RegisterPlayer a cada respawn (destroy+recreate) — o
+    // player antigo é destruído junto com seu PlayerSkillManager/ResourceManager,
+    // então a barra precisa apontar pra instância nova. Os slots visuais (ícone/nome/
+    // tecla) não mudam: guardam referência direta ao Skill (ScriptableObject, asset
+    // compartilhado entre instâncias), só a leitura de cooldown/Momentum precisa
+    // do objeto novo.
+    public static void Rebind(PlayerSkillManager manager)
+    {
+        SkillBarUI instance = FindAnyObjectByType<SkillBarUI>();
 
-        if (legacyMomentumUI != null)
-            legacyMomentumUI.gameObject.SetActive(false);
+        if (instance != null)
+            instance.RebindInternal(manager);
+    }
+
+    private void RebindInternal(PlayerSkillManager manager)
+    {
+        if (resourceManager != null)
+            resourceManager.OnResourceChanged -= RefreshMomentum;
+
+        skillManager = manager;
+        resourceManager = manager.GetComponent<ResourceManager>();
+
+        if (resourceManager != null)
+        {
+            resourceManager.OnResourceChanged += RefreshMomentum;
+            RefreshMomentum();
+        }
+
+        RefreshStatsDriven();
     }
 
     private void OnDestroy()
     {
         if (resourceManager != null)
             resourceManager.OnResourceChanged -= RefreshMomentum;
+
+        if (StatsManager.Instance != null)
+            StatsManager.Instance.OnStatsChanged -= RefreshStatsDriven;
     }
 
+    // Update só cuida do que é contínuo de verdade (contagem regressiva de cooldown).
+    // Vida/mana/stats mudam por evento — ver RefreshStatsDriven.
     private void Update()
     {
         if (skillManager == null || slots == null)
@@ -59,7 +91,10 @@ public class SkillBarUI : MonoBehaviour
 
         for (int i = 0; i < slots.Length; i++)
             slots[i].Refresh(skillManager);
+    }
 
+    private void RefreshStatsDriven()
+    {
         RefreshVitalBars();
         RefreshDebugStats();
     }
@@ -98,6 +133,13 @@ public class SkillBarUI : MonoBehaviour
         BuildMomentumBar();
         BuildVitalBars();
         BuildDebugStatsPanel();
+
+        // Vida/mana/atributos só mudam quando OnStatsChanged dispara (dano, regen,
+        // level up, equipar) — assinar o evento evita reler tudo a cada frame.
+        if (StatsManager.Instance != null)
+            StatsManager.Instance.OnStatsChanged += RefreshStatsDriven;
+
+        RefreshStatsDriven();
     }
 
     private void BuildMomentumBar()

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -128,14 +129,69 @@ public class InventoryManager : MonoBehaviour, ICancelable
         }
     }
 
+    public int IndexOf(ItemSlot slot)
+    {
+        return System.Array.IndexOf(itemSlot, slot);
+    }
+
+    // Move, mescla ou troca o conteúdo entre dois slots do inventário — usado pelo
+    // drag-and-drop. Não faz nada se os índices forem iguais (soltar no próprio slot).
+    public bool MoveOrMergeOrSwap(int fromIndex, int toIndex)
+    {
+        if (fromIndex < 0 || toIndex < 0 || fromIndex >= itemSlot.Length || toIndex >= itemSlot.Length)
+            return false;
+
+        if (fromIndex == toIndex)
+            return false;
+
+        ItemSlot fromSlot = itemSlot[fromIndex];
+        ItemSlot toSlot = itemSlot[toIndex];
+
+        if (fromSlot.item == null)
+            return false;
+
+        if (toSlot.item == null)
+        {
+            toSlot.LoadItem(fromSlot.item, fromSlot.quantity);
+            fromSlot.Clear();
+            return true;
+        }
+
+        if (toSlot.item == fromSlot.item && fromSlot.item.stackable)
+        {
+            int leftover = toSlot.AddItem(fromSlot.item, fromSlot.quantity);
+
+            if (leftover <= 0)
+                fromSlot.Clear();
+            else
+                fromSlot.ReduceQuantity(fromSlot.quantity - leftover);
+
+            return true;
+        }
+
+        // Itens diferentes -> troca completa
+        ItemSO fromItem = fromSlot.item;
+        int fromQuantity = fromSlot.quantity;
+        ItemSO toItem = toSlot.item;
+        int toQuantity = toSlot.quantity;
+
+        fromSlot.LoadItem(toItem, toQuantity);
+        toSlot.LoadItem(fromItem, fromQuantity);
+
+        return true;
+    }
+
     public void DropItem(ItemSlot slot)
     {
         if (slot.item == null)
             return;
 
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        Transform playerTransform = GameManager.Instance != null ? GameManager.Instance.Player : null;
 
-        Vector3 dropPosition = player.transform.position + player.transform.right * 0.5f;
+        if (playerTransform == null)
+            return;
+
+        Vector3 dropPosition = playerTransform.position + playerTransform.right * 0.5f;
 
         GameObject droppedObject = Instantiate(
             worldItemPrefab,
@@ -163,6 +219,52 @@ public class InventoryManager : MonoBehaviour, ICancelable
 
         if (Instance == this)
             Instance = null;
+    }
+
+    public List<ItemStackSave> GetState()
+    {
+        List<ItemStackSave> result = new();
+
+        for (int i = 0; i < itemSlot.Length; i++)
+        {
+            ItemSlot slot = itemSlot[i];
+
+            if (slot.item == null)
+                continue;
+
+            result.Add(new ItemStackSave
+            {
+                slotIndex = i,
+                itemId = slot.item.Id,
+                quantity = slot.quantity
+            });
+        }
+
+        return result;
+    }
+
+    // Reconstrói o inventário do zero a partir do save — todo slot não presente na
+    // lista fica vazio (Clear), então não sobra item de uma partida anterior.
+    public void ApplyState(List<ItemStackSave> state, ItemDatabaseSO database)
+    {
+        for (int i = 0; i < itemSlot.Length; i++)
+            itemSlot[i].Clear();
+
+        if (state == null || database == null)
+            return;
+
+        foreach (ItemStackSave stack in state)
+        {
+            if (stack.slotIndex < 0 || stack.slotIndex >= itemSlot.Length)
+                continue;
+
+            ItemSO item = database.GetById(stack.itemId);
+
+            if (item == null)
+                continue;
+
+            itemSlot[stack.slotIndex].LoadItem(item, stack.quantity);
+        }
     }
 
     public bool CanCancel()

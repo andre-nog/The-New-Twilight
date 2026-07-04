@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1469e464feb84aba91a07ee59cb945ac, type: 3}
+  m_Name: Villager
+  m_EditorClassIdentifier: Assembly-CSharp::ClassDefinitionSO
+  className: Villager
+  primaryAttribute: 0
+  baseStrength: 1
+  baseAgility: 1
+  baseIntelligence: 1
+  strengthPerLevel: 2
+  agilityPerLevel: 1
+  intelligencePerLevel: 1
+  defaultSkills:
+  - {fileID: 11400000, guid: 7183a25b24d72ae4997d69588a61c1a6, type: 2}
+  - {fileID: 11400000, guid: 1e52f75bacf5992419babbc15eb60b40, type: 2}
+  - {fileID: 11400000, guid: 646f9851ecc2b6845a7a45b8be6412d3, type: 2}
+  passives:
+  - {fileID: 11400000, guid: 9476d912891d69e42ab076783cc8bf21, type: 2}
+  resourceName: Momentum
+  maxResource: 6
+  promotionLevel: 10
+  promotesTo: []

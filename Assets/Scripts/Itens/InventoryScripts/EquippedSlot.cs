@@ -3,9 +3,14 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 public class EquippedSlot : MonoBehaviour,
+    IItemSlot,
     IPointerClickHandler,
     IPointerEnterHandler,
-    IPointerExitHandler
+    IPointerExitHandler,
+    IBeginDragHandler,
+    IDragHandler,
+    IEndDragHandler,
+    IDropHandler
 
 {
     [Header("Slot")]
@@ -18,6 +23,18 @@ public class EquippedSlot : MonoBehaviour,
     [SerializeField] private GameObject placeholder;
 
     private ItemSO equippedItem;
+
+    // Setada em OnBeginDrag; usada para suprimir o Unequip() que o OnPointerClick
+    // ainda dispararia depois de um arrasto (mesmo cancelado).
+    private bool wasDragged;
+
+    public ItemSO Item => equippedItem;
+
+    // Implementação explícita: a classe já tem um método IsEmpty() público (usado por
+    // EquipmentManager) e C# não permite um método e uma propriedade com o mesmo nome.
+    bool IItemSlot.IsEmpty => equippedItem == null;
+
+    public bool CanAccept(ItemSO item) => item != null && CanEquip(item);
 
     private void Start()
     {
@@ -74,15 +91,54 @@ public class EquippedSlot : MonoBehaviour,
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (wasDragged)
+        {
+            wasDragged = false;
+            return;
+        }
+
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             EquipmentManager.Instance.Unequip(this);
         }
     }
 
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left)
+            return;
+
+        if (equippedItem == null)
+            return;
+
+        wasDragged = true;
+        InventoryDragController.Instance.BeginDrag(this, itemImage.sprite, eventData);
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (!InventoryDragController.Instance.IsDragging)
+            return;
+
+        InventoryDragController.Instance.UpdateGhostPosition(eventData);
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        InventoryDragController.Instance.EndDrag();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        InventoryDragController.Instance.TryDrop(this);
+    }
+
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (equippedItem == null || TooltipManager.Instance == null)
+            return;
+
+        if (InventoryDragController.Instance != null && InventoryDragController.Instance.IsDragging)
             return;
 
         TooltipManager.Instance.Show(equippedItem);

@@ -101,15 +101,16 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
 
     private void SelectNextEnemy()
     {
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
-        if (enemies.Length == 0)
+        // Enemy_Health.Active substitui FindGameObjectsWithTag — mesma lista de
+        // inimigos vivos, sem varrer a cena inteira a cada Tab.
+        if (Enemy_Health.Active.Count == 0)
             return;
 
         List<GameObject> visibleEnemies = new();
 
-        foreach (GameObject enemy in enemies)
+        foreach (Enemy_Health enemyHealth in Enemy_Health.Active)
         {
+            GameObject enemy = enemyHealth.gameObject;
             // ALTERADO - trocado SpriteRenderer.bounds por Collider2D.bounds.
             // Isso alinha a checagem de visibilidade com a mesma área usada pra
             // clicar no inimigo (CheckEnemyClick usa Physics2D.OverlapPointAll no

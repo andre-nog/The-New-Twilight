@@ -21,10 +21,21 @@ public class DamagePopup : MonoBehaviour
     private float timer;
     private float curveDirection;
 
-    public void Setup(int damage, Color color)
+    // Devolve o popup ao pool do DamageManager em vez de Destroy — o mesmo objeto
+    // é reusado, então Setup precisa resetar tudo que o Update anterior mexeu.
+    private System.Action<DamagePopup> onFinished;
+
+    public void Setup(int damage, Color color, System.Action<DamagePopup> onFinished)
     {
+        this.onFinished = onFinished;
+
         textMesh.text = damage.ToString();
+
+        // Alpha explícito: o uso anterior pode ter terminado com fade quase em zero.
+        color.a = 1f;
         textMesh.color = color;
+
+        transform.localScale = Vector3.one;
 
         timer = lifetime;
 
@@ -85,6 +96,11 @@ public class DamagePopup : MonoBehaviour
         textMesh.color = color;
 
         if (timer <= 0f)
-            Destroy(gameObject);
+        {
+            if (onFinished != null)
+                onFinished(this);
+            else
+                Destroy(gameObject); // fallback se alguém instanciar fora do pool
+        }
     }
 }
