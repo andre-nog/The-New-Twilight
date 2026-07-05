@@ -1,16 +1,19 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class SkillBarUI : MonoBehaviour
 {
-    private const float SlotSize = 76f;
+    public static SkillBarUI Instance { get; private set; }
+
+    private const int SlotCount = 9;
     private static Sprite runtimeSprite;
 
     private PlayerSkillManager skillManager;
+    public PlayerSkillManager SkillManager => skillManager;
+
     private ResourceManager resourceManager;
-    private SkillSlotUI[] slots;
+    private SkillBarSlot[] slots;
     private Image[] momentumSegments;
 
     private Image healthFillImage;
@@ -19,27 +22,36 @@ public class SkillBarUI : MonoBehaviour
     private TMP_Text manaBarText;
     private TMP_Text debugStatsText;
 
-    // Chamado pelo GameManager.Start() — ordem de bootstrap explícita em vez de
-    // [RuntimeInitializeOnLoadMethod] autoexecutando antes de qualquer outra coisa.
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        // Sem GraphicRaycaster, o EventSystem não faz raycast contra os SkillBarSlot,
+        // então eles nunca recebem OnDrop/OnBeginDrag. O SkillBarCanvasBuilder já
+        // adiciona um, mas garantimos aqui também pra funcionar mesmo com uma canvas
+        // buildada antes dessa correção (sem precisar re-rodar o builder).
+        if (!TryGetComponent<GraphicRaycaster>(out _))
+            gameObject.AddComponent<GraphicRaycaster>();
+    }
+
+    // Chamado pelo GameManager.Start() — a Canvas/hierarquia da barra já vem
+    // autorada na cena (Tools > Skill Bar > Build Skill Bar Canvas), então aqui só
+    // achamos a instância existente e populamos os slots com o loadout atual.
     public static void EnsureCreated()
     {
         PlayerSkillManager manager = FindAnyObjectByType<PlayerSkillManager>();
+        SkillBarUI existing = FindAnyObjectByType<SkillBarUI>();
 
-        if (manager == null || FindAnyObjectByType<SkillBarUI>() != null)
+        if (manager == null || existing == null)
             return;
 
-        GameObject canvasObject = new("Skill Bar Canvas");
-        Canvas canvas = canvasObject.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 100;
-
-        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
-
-        SkillBarUI skillBar = canvasObject.AddComponent<SkillBarUI>();
-        skillBar.Build(manager);
+        existing.Build(manager);
     }
 
     // Chamado pelo GameManager.RegisterPlayer a cada respawn (destroy+recreate) — o
@@ -80,6 +92,9 @@ public class SkillBarUI : MonoBehaviour
 
         if (StatsManager.Instance != null)
             StatsManager.Instance.OnStatsChanged -= RefreshStatsDriven;
+
+        if (Instance == this)
+            Instance = null;
     }
 
     // Update só cuida do que é contínuo de verdade (contagem regressiva de cooldown).
@@ -90,7 +105,15 @@ public class SkillBarUI : MonoBehaviour
             return;
 
         for (int i = 0; i < slots.Length; i++)
-            slots[i].Refresh(skillManager);
+            slots[i].TickCooldown();
+    }
+
+    // Chamado pelo SkillDragController depois de um drop bem-sucedido, pra atualizar
+    // ícone/nome do slot imediatamente (sem esperar o próximo tick de cooldown).
+    public void RefreshSlot(int index)
+    {
+        if (slots != null && index >= 0 && index < slots.Length)
+            slots[index].Refresh();
     }
 
     private void RefreshStatsDriven()
@@ -101,34 +124,33 @@ public class SkillBarUI : MonoBehaviour
 
     private void Build(PlayerSkillManager manager)
     {
+        // Evita reassinar OnStatsChanged / repopular tudo se EnsureCreated() for
+        // chamado mais de uma vez na mesma sessão.
+        if (slots != null)
+            return;
+
         skillManager = manager;
         resourceManager = manager.GetComponent<ResourceManager>();
 
-        IReadOnlyList<Skill> equippedSkills = manager.EquippedSkills;
+        Transform bar = transform.Find("Skill Bar");
 
-        RectTransform bar = CreateUIObject("Skill Bar", transform);
-        bar.anchorMin = new Vector2(0.5f, 0f);
-        bar.anchorMax = new Vector2(0.5f, 0f);
-        bar.pivot = new Vector2(0.5f, 0f);
-        bar.anchoredPosition = new Vector2(0f, 28f);
-        bar.sizeDelta = new Vector2(SlotSize * equippedSkills.Count + 32f, SlotSize + 16f);
+        if (bar == null)
+        {
+            Debug.LogWarning(
+                "SkillBarUI: 'Skill Bar' não encontrada na hierarquia — rode Tools > Skill Bar > Build Skill Bar Canvas.",
+                this);
+        }
+        else
+        {
+            slots = new SkillBarSlot[SlotCount];
 
-        Image barBackground = bar.gameObject.AddComponent<Image>();
-        barBackground.sprite = GetRuntimeSprite();
-        barBackground.color = new Color(0.04f, 0.05f, 0.07f, 0.8f);
-
-        HorizontalLayoutGroup layout = bar.gameObject.AddComponent<HorizontalLayoutGroup>();
-        layout.padding = new RectOffset(8, 8, 8, 8);
-        layout.spacing = 8f;
-        layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.childControlWidth = false;
-        layout.childControlHeight = false;
-        layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = false;
-
-        slots = new SkillSlotUI[equippedSkills.Count];
-        for (int i = 0; i < equippedSkills.Count; i++)
-            slots[i] = CreateSlot(bar, equippedSkills[i], (i + 1).ToString());
+            for (int i = 0; i < SlotCount; i++)
+            {
+                Transform slotTransform = bar.Find($"Skill Slot {i + 1}");
+                slots[i] = slotTransform.GetComponent<SkillBarSlot>();
+                slots[i].Initialize(manager);
+            }
+        }
 
         BuildMomentumBar();
         BuildVitalBars();
@@ -334,66 +356,6 @@ public class SkillBarUI : MonoBehaviour
             $"Move Speed: {s.MoveSpeed:0.#}";
     }
 
-    private static SkillSlotUI CreateSlot(Transform parent, Skill skill, string key)
-    {
-        RectTransform slot = CreateUIObject($"Skill {key}", parent);
-        slot.sizeDelta = new Vector2(SlotSize, SlotSize);
-
-        LayoutElement layoutElement = slot.gameObject.AddComponent<LayoutElement>();
-        layoutElement.preferredWidth = SlotSize;
-        layoutElement.preferredHeight = SlotSize;
-
-        Image background = slot.gameObject.AddComponent<Image>();
-        background.sprite = GetRuntimeSprite();
-        background.color = new Color(0.12f, 0.14f, 0.18f, 0.95f);
-
-        Outline outline = slot.gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(0.55f, 0.6f, 0.7f, 0.9f);
-        outline.effectDistance = new Vector2(2f, -2f);
-
-        Image icon = CreateImage("Icon", slot, new Color(1f, 1f, 1f, 0.9f));
-        SetStretch(icon.rectTransform, 7f);
-        icon.sprite = skill != null && skill.icon != null ? skill.icon : GetRuntimeSprite();
-        icon.preserveAspect = skill != null && skill.icon != null;
-        icon.color = skill != null && skill.icon != null
-            ? Color.white
-            : new Color(0.22f, 0.26f, 0.34f, 1f);
-
-        Image cooldown = CreateImage("Cooldown", slot, new Color(0f, 0f, 0f, 0.72f));
-        SetStretch(cooldown.rectTransform, 0f);
-        cooldown.sprite = GetRuntimeSprite();
-        cooldown.type = Image.Type.Filled;
-        cooldown.fillMethod = Image.FillMethod.Radial360;
-        cooldown.fillOrigin = (int)Image.Origin360.Top;
-        cooldown.fillClockwise = false;
-        cooldown.fillAmount = 0f;
-
-        TMP_Text keyText = CreateText("Key", slot, key, 19f, TextAlignmentOptions.TopLeft);
-        SetStretch(keyText.rectTransform, 5f);
-        keyText.fontStyle = FontStyles.Bold;
-        keyText.color = new Color(1f, 0.86f, 0.35f, 1f);
-
-        string displayName = skill != null ? skill.skillName : "Empty";
-        TMP_Text nameText = CreateText("Name", slot, displayName, 12f, TextAlignmentOptions.Bottom);
-        nameText.rectTransform.anchorMin = new Vector2(0f, 0f);
-        nameText.rectTransform.anchorMax = new Vector2(1f, 0f);
-        nameText.rectTransform.pivot = new Vector2(0.5f, 0f);
-        nameText.rectTransform.anchoredPosition = new Vector2(0f, 4f);
-        nameText.rectTransform.sizeDelta = new Vector2(-8f, 20f);
-        nameText.textWrappingMode = TextWrappingModes.NoWrap;
-
-        TMP_Text cooldownText = CreateText(
-            "Cooldown Text",
-            slot,
-            string.Empty,
-            24f,
-            TextAlignmentOptions.Center);
-        SetStretch(cooldownText.rectTransform, 0f);
-        cooldownText.fontStyle = FontStyles.Bold;
-
-        return new SkillSlotUI(skill, cooldown, cooldownText);
-    }
-
     private static RectTransform CreateUIObject(string objectName, Transform parent)
     {
         GameObject gameObject = new(objectName, typeof(RectTransform));
@@ -426,7 +388,7 @@ public class SkillBarUI : MonoBehaviour
         text.alignment = alignment;
         text.color = Color.white;
         text.raycastTarget = false;
-        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.overflowMode = TextOverflowModes.Truncate;
         return text;
     }
 
@@ -438,7 +400,9 @@ public class SkillBarUI : MonoBehaviour
         rectTransform.offsetMax = new Vector2(-margin, -margin);
     }
 
-    private static Sprite GetRuntimeSprite()
+    // Público — SkillBarSlot também usa como placeholder de ícone vazio, pra não
+    // duplicar essa textura/sprite runtime numa segunda cópia.
+    public static Sprite GetRuntimeSprite()
     {
         if (runtimeSprite != null)
             return runtimeSprite;
@@ -455,37 +419,5 @@ public class SkillBarUI : MonoBehaviour
             1f);
         runtimeSprite.name = "Skill Bar Runtime Sprite";
         return runtimeSprite;
-    }
-
-    private sealed class SkillSlotUI
-    {
-        private readonly Skill skill;
-        private readonly Image cooldownImage;
-        private readonly TMP_Text cooldownText;
-
-        public SkillSlotUI(Skill skill, Image cooldownImage, TMP_Text cooldownText)
-        {
-            this.skill = skill;
-            this.cooldownImage = cooldownImage;
-            this.cooldownText = cooldownText;
-        }
-
-        public void Refresh(PlayerSkillManager manager)
-        {
-            float remaining = manager.GetRemainingCooldown(skill);
-            float duration = manager.GetCooldownDuration(skill);
-            bool coolingDown = remaining > 0f && duration > 0f;
-
-            cooldownImage.enabled = coolingDown;
-            cooldownText.enabled = coolingDown;
-
-            if (!coolingDown)
-                return;
-
-            cooldownImage.fillAmount = Mathf.Clamp01(remaining / duration);
-            cooldownText.text = remaining >= 1f
-                ? Mathf.CeilToInt(remaining).ToString()
-                : remaining.ToString("0.0");
-        }
     }
 }

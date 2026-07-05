@@ -63,6 +63,7 @@ public class GameManager : MonoBehaviour
     {
         SkillBarUI.EnsureCreated();
         InventoryDragController.EnsureCreated();
+        SkillDragController.EnsureCreated();
         expManager = FindAnyObjectByType<ExpManager>();
     }
 

@@ -24,9 +24,6 @@ public class PlayerSkillManager : MonoBehaviour
     private SkillSlot[] slots;
     private Skill queuedSkill;
 
-    public IReadOnlyList<Skill> EquippedSkills => equippedSkills;
-    private Skill[] equippedSkills;
-
     private void Awake()
     {
         combat = GetComponent<Player_Combat>();
@@ -37,6 +34,10 @@ public class PlayerSkillManager : MonoBehaviour
     // slots é privado e não-serializado — recompilar scripts no Editor (domain reload)
     // zera esse campo sem rodar Awake() de novo para objetos que já existiam na cena.
     // OnEnable roda nesse caso, então reconstruímos aqui também se precisar.
+    //
+    // A capacidade é slotInputs.Count (não mais limitada por quantas skills a classe
+    // já tem) — slots além do kit padrão nascem vazios (skill = null), pra poder
+    // receber uma skill via drag-and-drop do Livro de Skills em qualquer posição.
     private void EnsureSlotsBuilt()
     {
         if (slots != null)
@@ -51,20 +52,19 @@ public class PlayerSkillManager : MonoBehaviour
 
         List<Skill> skills = currentClass != null ? currentClass.defaultSkills : null;
 
-        int count = skills != null ? Mathf.Min(skills.Count, slotInputs.Count) : 0;
-
         if (skills != null && skills.Count > slotInputs.Count)
             Debug.LogWarning(
                 $"PlayerSkillManager: classe '{currentClass.name}' tem {skills.Count} skills mas só {slotInputs.Count} inputs de slot — as últimas ficam de fora.",
                 this);
 
+        int count = slotInputs.Count;
+
         slots = new SkillSlot[count];
-        equippedSkills = new Skill[count];
 
         for (int i = 0; i < count; i++)
         {
-            slots[i] = new SkillSlot { input = slotInputs[i], skill = skills[i] };
-            equippedSkills[i] = skills[i];
+            Skill skill = skills != null && i < skills.Count ? skills[i] : null;
+            slots[i] = new SkillSlot { input = slotInputs[i], skill = skill };
         }
     }
 
@@ -147,6 +147,11 @@ public class PlayerSkillManager : MonoBehaviour
 
     private SkillSlot FindSlot(Skill skill)
     {
+        // Guarda explícita: sem isso, skill == null "encontraria" o primeiro slot
+        // vazio (skill também null) em vez de reportar "não encontrado".
+        if (skill == null)
+            return null;
+
         foreach (SkillSlot slot in slots)
         {
             if (slot.skill == skill)
@@ -184,5 +189,38 @@ public class PlayerSkillManager : MonoBehaviour
 
         slot.cooldown = duration;
         slot.duration = duration;
+    }
+
+    public int SlotCount => slots.Length;
+
+    public Skill GetSkillAt(int index)
+    {
+        return index >= 0 && index < slots.Length ? slots[index].skill : null;
+    }
+
+    // Atribui uma skill a um slot específico, sobrescrevendo o que estava lá — usado
+    // pelo drag do Livro de Skills pra barra. A skill entra "fresca" (sem cooldown
+    // pendente de quem ocupava o slot antes).
+    public void SetSkillAt(int index, Skill skill)
+    {
+        if (index < 0 || index >= slots.Length)
+            return;
+
+        slots[index].skill = skill;
+        slots[index].cooldown = 0f;
+        slots[index].duration = 0f;
+    }
+
+    // Troca o conteúdo de dois slots entre si — usado pra reorganizar a própria barra.
+    // Cooldown/duration viajam junto com a skill (o cooldown pertence à skill que está
+    // em progresso, não à posição do slot).
+    public void SwapSkills(int indexA, int indexB)
+    {
+        if (indexA < 0 || indexA >= slots.Length || indexB < 0 || indexB >= slots.Length || indexA == indexB)
+            return;
+
+        (slots[indexA].skill, slots[indexB].skill) = (slots[indexB].skill, slots[indexA].skill);
+        (slots[indexA].cooldown, slots[indexB].cooldown) = (slots[indexB].cooldown, slots[indexA].cooldown);
+        (slots[indexA].duration, slots[indexB].duration) = (slots[indexB].duration, slots[indexA].duration);
     }
 }
