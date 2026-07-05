@@ -34,3 +34,8 @@ ExportedObj/
 *.VC.db
 
 sysinfo.txt
+
+.agents/
+.claude/
+agent/
+skills-lock.json
