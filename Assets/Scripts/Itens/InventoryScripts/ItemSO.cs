@@ -21,6 +21,9 @@ public class ItemSO : ScriptableObject
     public ItemType itemType;
     public bool stackable = true;
 
+    [Header("Rarity")]
+    public ItemRarity rarity;
+
     // Id estável para save/load — o GUID do próprio asset (não muda ao renomear ou
     // mover o arquivo). Nunca editar à mão; preenchido automaticamente no Editor.
     [SerializeField, HideInInspector] private string id;
@@ -48,6 +51,50 @@ public class ItemSO : ScriptableObject
         EditorUtility.SetDirty(this);
     }
 #endif
+
+    public ItemTooltipData GetItemTooltipData()
+    {
+        List<(string label, string value)> statRows = new();
+
+        foreach (StatModifier modifier in modifiers)
+            statRows.Add((StatFormatter.GetStatName(modifier.stat), $"+{modifier.amount}"));
+
+        return new ItemTooltipData
+        {
+            title = itemName,
+            titleColor = GetRarityColor(rarity),
+            rarityLabel = rarity.ToString(),
+            slotLabel = GetSlotLabel(itemType),
+            statRows = statRows,
+            description = description,
+        };
+    }
+
+    private static string GetSlotLabel(ItemType itemType)
+    {
+        switch (itemType)
+        {
+            case ItemType.Consumable:
+            case ItemType.Material:
+            case ItemType.Quest:
+                return null;
+
+            case ItemType.MainHand: return "Main Hand";
+            case ItemType.OffHand: return "Off Hand";
+
+            default: return itemType.ToString();
+        }
+    }
+
+    private static Color GetRarityColor(ItemRarity rarity)
+    {
+        switch (rarity)
+        {
+            case ItemRarity.Uncommon: return new Color32(0x3C, 0xB0, 0x43, 0xFF);
+            case ItemRarity.Rare: return new Color32(0x00, 0x70, 0xDD, 0xFF);
+            default: return Color.white;
+        }
+    }
 
     public void UseItem()
     {
@@ -78,5 +125,12 @@ public class ItemSO : ScriptableObject
 
         Necklace,
         Ring
+    }
+
+    public enum ItemRarity
+    {
+        Common,
+        Uncommon,
+        Rare
     }
 }

@@ -1,5 +1,5 @@
-using TMPro;
 using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
 
 public class SkillBarUI : MonoBehaviour
@@ -114,6 +114,17 @@ public class SkillBarUI : MonoBehaviour
     {
         if (slots != null && index >= 0 && index < slots.Length)
             slots[index].Refresh();
+    }
+
+    // Repõe todos os slots — usado após um drop do Livro, já que atribuir uma skill
+    // pode esvaziar outro slot (a mesma skill não fica em dois lugares).
+    public void RefreshAll()
+    {
+        if (slots == null)
+            return;
+
+        for (int i = 0; i < slots.Length; i++)
+            slots[i].Refresh();
     }
 
     private void RefreshStatsDriven()

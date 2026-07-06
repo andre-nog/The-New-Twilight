@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -21,11 +22,12 @@ public static class SkillBookCanvasBuilder
 
     // Lista fixa e ordenada das skills que já existem no projeto — casadas pelo
     // campo Skill.skillName (mais robusto que casar pelo nome do arquivo do asset).
-    private static readonly (string skillName, bool locked)[] SkillEntries =
+    // Travado/aprendido NÃO é mais baked aqui: vem da SkillProgression em runtime.
+    private static readonly string[] SkillNames =
     {
-        ("Auto Attack", false),
-        ("Power Strike", false),
-        ("Stomp", false),
+        "Auto Attack",
+        "Power Strike",
+        "Stomp",
     };
 
     [MenuItem("Tools/Skill Book/Build Skill Book Canvas")]
@@ -101,17 +103,37 @@ public static class SkillBookCanvasBuilder
         layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         layout.constraintCount = Columns;
 
-        foreach ((string skillName, bool locked) in SkillEntries)
+        List<SkillBookSlot> bookSlots = new();
+
+        foreach (string skillName in SkillNames)
         {
             Skill skill = FindSkillByName(skillName);
 
             if (skill == null)
                 Debug.LogWarning($"SkillBookCanvasBuilder: nenhum asset de Skill encontrado com skillName \"{skillName}\".");
 
-            BuildSlot(grid, skill, skillName, locked);
+            bookSlots.Add(BuildSlot(grid, skill, skillName));
         }
 
+        TMP_Text pointsText = BuildPointsLabel(panel);
+        skillBookUI.Configure(bookSlots.ToArray(), pointsText);
+
         Selection.activeGameObject = canvasObject;
+    }
+
+    // "Points: N" no canto superior direito da barra de título (o título "Skills"
+    // fica centralizado; textos curtos não colidem).
+    private static TMP_Text BuildPointsLabel(RectTransform panel)
+    {
+        TMP_Text points = CreateText("Points", panel, "Points: 0", 14f, TextAlignmentOptions.Right);
+        points.rectTransform.anchorMin = new Vector2(0f, 1f);
+        points.rectTransform.anchorMax = new Vector2(1f, 1f);
+        points.rectTransform.pivot = new Vector2(0.5f, 1f);
+        points.rectTransform.anchoredPosition = Vector2.zero;
+        points.rectTransform.sizeDelta = new Vector2(-16f, TitleBarHeight);
+        points.textWrappingMode = TextWrappingModes.NoWrap;
+        points.fontStyle = FontStyles.Bold;
+        return points;
     }
 
     private static Skill FindSkillByName(string skillName)
@@ -130,7 +152,7 @@ public static class SkillBookCanvasBuilder
         return null;
     }
 
-    private static void BuildSlot(Transform parent, Skill skill, string displayName, bool locked)
+    private static SkillBookSlot BuildSlot(Transform parent, Skill skill, string displayName)
     {
         RectTransform slot = CreateUIObject($"Skill Slot ({displayName})", parent);
         slot.sizeDelta = new Vector2(SlotSize, SlotSize);
@@ -149,9 +171,7 @@ public static class SkillBookCanvasBuilder
         SetStretch(icon.rectTransform, 7f);
         icon.sprite = hasIcon ? skill.icon : GetRuntimeSprite();
         icon.preserveAspect = hasIcon;
-        icon.color = locked
-            ? new Color(0.22f, 0.26f, 0.34f, 1f)
-            : Color.white;
+        icon.color = Color.white; // o Refresh() em runtime escurece se estiver travada
 
         TMP_Text nameText = CreateText("Name", slot, displayName, 12f, TextAlignmentOptions.Bottom);
         nameText.rectTransform.anchorMin = new Vector2(0f, 0f);
@@ -160,17 +180,56 @@ public static class SkillBookCanvasBuilder
         nameText.rectTransform.anchoredPosition = new Vector2(0f, 4f);
         nameText.rectTransform.sizeDelta = new Vector2(-8f, 20f);
         nameText.textWrappingMode = TextWrappingModes.NoWrap;
-        nameText.color = locked ? new Color(0.6f, 0.6f, 0.6f, 1f) : Color.white;
+        nameText.color = Color.white;
 
-        // Overlay de "bloqueada" — mesma linguagem visual do overlay de cooldown da
-        // hotbar, só que sem preenchimento radial: liga/desliga por inteiro.
+        // Pips de nível (topo do slot) — preenchido pelo Refresh() em runtime (●●○).
+        TMP_Text pips = CreateText("Pips", slot, string.Empty, 12f, TextAlignmentOptions.Top);
+        pips.rectTransform.anchorMin = new Vector2(0f, 1f);
+        pips.rectTransform.anchorMax = new Vector2(1f, 1f);
+        pips.rectTransform.pivot = new Vector2(0.5f, 1f);
+        pips.rectTransform.anchoredPosition = new Vector2(0f, -2f);
+        pips.rectTransform.sizeDelta = new Vector2(-8f, 16f);
+        pips.textWrappingMode = TextWrappingModes.NoWrap;
+
+        Button plusButton = BuildPlusButton(slot);
+
+        // Overlay de "bloqueada" — raycastTarget desligado (via CreateImage) pra não
+        // engolir o clique do botão "+" quando a skill está travada mas aprendível.
         Image lockedOverlay = CreateImage("Locked Overlay", slot, new Color(0f, 0f, 0f, 0.55f));
         SetStretch(lockedOverlay.rectTransform, 0f);
         lockedOverlay.sprite = GetRuntimeSprite();
-        lockedOverlay.gameObject.SetActive(locked);
+        lockedOverlay.gameObject.SetActive(false);
 
         SkillBookSlot bookSlot = slot.gameObject.AddComponent<SkillBookSlot>();
-        bookSlot.Configure(skill, locked, icon);
+        bookSlot.Configure(skill, icon, plusButton, pips, lockedOverlay.gameObject);
+        return bookSlot;
+    }
+
+    // Botãozinho "+" no canto superior direito do slot. Tem raycastTarget próprio
+    // (Image) e é um filho separado, então o clique nele não dispara o drag do corpo
+    // do slot. O Refresh() liga/desliga o interactable conforme dá pra aprender/upar.
+    private static Button BuildPlusButton(Transform parent)
+    {
+        RectTransform rect = CreateUIObject("Plus Button", parent);
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-2f, -2f);
+        rect.sizeDelta = new Vector2(22f, 22f);
+
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.sprite = GetRuntimeSprite();
+        image.color = new Color(0.18f, 0.5f, 0.24f, 1f);
+        image.raycastTarget = true;
+
+        Button button = rect.gameObject.AddComponent<Button>();
+        button.targetGraphic = image;
+
+        TMP_Text plus = CreateText("Plus Text", rect, "+", 18f, TextAlignmentOptions.Center);
+        SetStretch(plus.rectTransform, 0f);
+        plus.fontStyle = FontStyles.Bold;
+
+        return button;
     }
 
     private static RectTransform CreateUIObject(string objectName, Transform parent)

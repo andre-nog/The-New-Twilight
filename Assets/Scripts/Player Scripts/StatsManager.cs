@@ -7,6 +7,11 @@ public class StatsManager : MonoBehaviour
     public static StatsManager Instance;
     public event Action OnStatsChanged;
 
+    // Disparado só quando o nível muda de fato (level up em jogo ou SetLevel no
+    // carregamento de save) — separado de OnStatsChanged, que pulsa a cada tick de
+    // regen. Quem depende de nível (progressão de skills) escuta este.
+    public event Action OnLevelChanged;
+
     [Header("Class")]
     [Tooltip("Classe atual — dona do atributo primário, dos atributos de nível 1 e do crescimento por nível. Promoção de classe = SetClass() + PlayerSkillManager.RebuildLoadout().")]
     [SerializeField] private ClassDefinitionSO currentClass;
@@ -87,6 +92,11 @@ public class StatsManager : MonoBehaviour
     public float CriticalDamage { get; private set; }
     public float Haste { get; private set; }
 
+    // Último "level" visto por OnValidate — não-serializado, então some num domain
+    // reload (recompile com a cena aberta); re-sincronizado em Awake/OnEnable pra não
+    // disparar um OnLevelChanged espúrio (0 != level) no primeiro OnValidate seguinte.
+    private int cachedLevel;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -100,6 +110,7 @@ public class StatsManager : MonoBehaviour
         RecalculateStats();
         currentHealth = MaxHealth;
         currentMana = MaxMana;
+        cachedLevel = level;
     }
 
     // Recompilar scripts no Editor zera campos static (domain reload) sem rodar Awake()
@@ -114,6 +125,7 @@ public class StatsManager : MonoBehaviour
         // Awake() de novo. Recalcular aqui evita ficar com stats zerados até a
         // próxima mudança (equipar, level up, etc.) disparar isso de novo.
         RecalculateStats();
+        cachedLevel = level;
     }
 
     private void Update()
@@ -144,9 +156,21 @@ public class StatsManager : MonoBehaviour
     // Chamado pelo Editor sempre que um campo muda no Inspector (level, growth per
     // level, etc.) — recalcula tudo na hora, então mudar o level já simula todos os
     // level ups até ali sem precisar entrar em Play.
+    //
+    // Também dispara OnLevelChanged quando "level" foi o campo alterado (comparado
+    // contra cachedLevel) — sem isso, editar level no Inspector durante o Play não
+    // avisa quem depende de nível (XP UI, progressão de skills), que só atualizavam
+    // na próxima mudança "de verdade" (GainExperience, etc.).
     private void OnValidate()
     {
         RecalculateStats();
+
+        if (level == cachedLevel)
+            return;
+
+        cachedLevel = level;
+        OnStatsChanged?.Invoke();
+        OnLevelChanged?.Invoke();
     }
 
     private void OnDestroy()
@@ -204,6 +228,7 @@ public class StatsManager : MonoBehaviour
         currentMana = MaxMana;
 
         OnStatsChanged?.Invoke();
+        OnLevelChanged?.Invoke();
     }
 
     // Hook da promoção de classe — troca a definição e re-deriva tudo do zero.
@@ -224,6 +249,7 @@ public class StatsManager : MonoBehaviour
 
         RecalculateStats();
         OnStatsChanged?.Invoke();
+        OnLevelChanged?.Invoke();
     }
 
     // Usado pelo carregamento de save — define vida/mana atuais diretamente. Chamar

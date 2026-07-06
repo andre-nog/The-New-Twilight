@@ -98,12 +98,16 @@ public class Player_Combat : MonoBehaviour
             FaceTarget(pendingCast.Target);
         }
 
+        // resourceCost não varia por nível — vem direto do campo fixo em Skill.
+        // manaCost sim, então continua vindo do nível ativo (SkillLevelData).
         if (skill.resourceCost > 0 &&
             !resourceManager.SpendResource(skill.resourceCost))
             return;
 
-        if (skill.manaCost > 0 &&
-            !StatsManager.Instance.SpendMana(skill.manaCost))
+        int manaCost = SkillProgression.DataFor(skill).manaCost;
+
+        if (manaCost > 0 &&
+            !StatsManager.Instance.SpendMana(manaCost))
             return;
 
         skillManager.StartCooldown(skill);
@@ -120,7 +124,7 @@ public class Player_Combat : MonoBehaviour
 
     // Passivas vêm da classe atual (ClassDefinitionSO) — trocar de classe troca
     // as passivas junto, sem re-wiring no Inspector.
-    private float GetPassiveDamageMultiplier(Skill skill)
+    public float GetPassiveDamageMultiplier(Skill skill)
     {
         ClassDefinitionSO currentClass = StatsManager.Instance != null
             ? StatsManager.Instance.CurrentClass
@@ -146,6 +150,11 @@ public class Player_Combat : MonoBehaviour
         if (skill == null)
             return;
 
+        // Skills não-aprendidas (nível 0) não podem ser usadas — mesmo que uma
+        // referência ainda esteja num slot da barra.
+        if (SkillProgression.LevelOf(skill) < 1)
+            return;
+
         // Não pode trocar durante a animação
         if (isAttacking)
             return;
@@ -156,11 +165,12 @@ public class Player_Combat : MonoBehaviour
             CancelMoveToAttack();
         }
 
-        // Verifica se há recurso suficiente
+        // Verifica se há recurso suficiente. resourceCost/range são fixos (Skill);
+        // manaCost varia por nível (SkillLevelData).
         if (!resourceManager.HasResource(skill.resourceCost))
             return;
 
-        if (!StatsManager.Instance.HasMana(skill.manaCost))
+        if (!StatsManager.Instance.HasMana(SkillProgression.DataFor(skill).manaCost))
             return;
 
         // Skills que não precisam de alvo (ex.: Stomp)
@@ -200,7 +210,7 @@ public class Player_Combat : MonoBehaviour
 
         DamageResult result = DamageCalculator.Calculate(
             offensivePower,
-            ctx.Skill.damageMultiplier,
+            SkillProgression.DataFor(ctx.Skill).damageMultiplier,
             ctx.ExtraMultiplier * GetPassiveDamageMultiplier(ctx.Skill),
             StatsManager.Instance.CriticalChance,
             StatsManager.Instance.CriticalDamage,
@@ -236,9 +246,11 @@ public class Player_Combat : MonoBehaviour
 
         skill.ExecuteEffect(this, pendingCast);
 
-        if (skill.resourceGenerated > 0)
+        int resourceGenerated = SkillProgression.DataFor(skill).resourceGenerated;
+
+        if (resourceGenerated > 0)
         {
-            resourceManager.AddResource(skill.resourceGenerated);
+            resourceManager.AddResource(resourceGenerated);
         }
     }
     public void ReleaseMovement()

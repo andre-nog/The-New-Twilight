@@ -47,8 +47,12 @@ public class ClassDefinitionSO : ScriptableObject
     public int intelligencePerLevel = 1;
 
     [Header("Kit")]
-    [Tooltip("Skills equipadas na barra, na ordem dos slots/teclas.")]
+    [Tooltip("Skills pré-posicionadas na barra no começo, na ordem dos slots/teclas. Só entram de fato as que já estão aprendidas (nível 1 no início = as autoLearnedAtStart).")]
     public List<Skill> defaultSkills = new();
+
+    [Tooltip("Todas as skills que esta classe pode aprender/upar via pontos de skill (o roster do Livro de Skills).")]
+    public List<Skill> learnableSkills = new();
+
     public Passive[] passives;
 
     [Header("Recurso")]

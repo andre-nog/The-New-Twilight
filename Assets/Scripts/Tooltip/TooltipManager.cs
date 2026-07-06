@@ -1,27 +1,26 @@
 using UnityEngine;
-using TMPro;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 public class TooltipManager : MonoBehaviour
 {
     public static TooltipManager Instance;
 
     [Header("UI")]
-    [SerializeField] private TMP_Text itemNameText;
-    [SerializeField] private TMP_Text descriptionText;
-    [SerializeField] private RectTransform background;
     [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private ItemTooltipView itemView;
+    [SerializeField] private SkillTooltipView skillView;
 
     [Header("Position")]
     [SerializeField] private Vector2 mouseOffset = new Vector2(20f, -20f);
 
-    [Header("Stats")]
-    [SerializeField] private Transform statsContainer;
-    [SerializeField] private GameObject statRowPrefab;
+    private RectTransform activeRect;
 
-    private RectTransform rectTransform;
-    private RectTransform statsContainerRect;
+    public void Configure(CanvasGroup canvasGroup, ItemTooltipView itemView, SkillTooltipView skillView)
+    {
+        this.canvasGroup = canvasGroup;
+        this.itemView = itemView;
+        this.skillView = skillView;
+    }
 
     private void Awake()
     {
@@ -33,8 +32,11 @@ public class TooltipManager : MonoBehaviour
 
         Instance = this;
 
-        rectTransform = GetComponent<RectTransform>();
-        statsContainerRect = statsContainer.GetComponent<RectTransform>();
+        // O Canvas tem o maior sortingOrder da cena (ver TooltipCanvasBuilder) —
+        // então isto precisa ficar sempre falso, senão o tooltip passaria a roubar
+        // clique/hover de qualquer UI que ele visualmente sobreponha.
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable = false;
     }
 
     private void OnDestroy()
@@ -50,103 +52,71 @@ public class TooltipManager : MonoBehaviour
 
     private void Update()
     {
-        if (Mouse.current == null || canvasGroup.alpha == 0)
+        if (Mouse.current == null || canvasGroup.alpha == 0f || activeRect == null)
             return;
 
         Vector2 mousePos = Mouse.current.position.ReadValue();
         Vector2 position = mousePos + mouseOffset;
 
-        float width = background.rect.width;
-        float height = background.rect.height;
+        float width = activeRect.rect.width;
+        float height = activeRect.rect.height;
+
+        // Pivot do painel é top-left (0,1): position é a borda SUPERIOR, o painel
+        // se estende PRA BAIXO por "height" — borda inferior = position.y - height.
 
         // Direita
         if (position.x + width > Screen.width)
             position.x = mousePos.x - width - mouseOffset.x;
 
-        // Topo
-        if (position.y + height > Screen.height)
-            position.y = mousePos.y - height - mouseOffset.y;
-
         // Esquerda
         if (position.x < 0)
             position.x = 0;
 
-        // Baixo
-        if (position.y < 0)
-            position.y = 0;
+        // Baixo: borda inferior passaria do rodapé da tela — espelha pra cima do mouse.
+        if (position.y - height < 0)
+            position.y = mousePos.y - mouseOffset.y + height;
 
-        rectTransform.position = position;
+        // Topo: mesmo espelhado, ainda estoura o topo da tela — gruda na borda superior.
+        if (position.y > Screen.height)
+            position.y = Screen.height;
+
+        activeRect.position = position;
     }
 
-    public void Show(ItemSO item)
+    public void ShowItem(ItemSO item)
     {
-        canvasGroup.alpha = 1f;
-
-        itemNameText.text = item.itemName;
-        descriptionText.text = item.description;
-
-        ClearStats();
-
-        foreach (StatModifier modifier in item.modifiers)
+        if (item == null)
         {
-            GameObject row = Instantiate(statRowPrefab, statsContainer);
-
-            row.GetComponent<StatRowUI>().Setup(
-                GetStatName(modifier.stat),
-                $"+{modifier.amount}"
-            );
+            Hide();
+            return;
         }
 
-        LayoutRebuilder.ForceRebuildLayoutImmediate(statsContainerRect);
-        LayoutRebuilder.ForceRebuildLayoutImmediate(background);
+        itemView.Populate(item.GetItemTooltipData());
+        itemView.gameObject.SetActive(true);
+        skillView.gameObject.SetActive(false);
+
+        activeRect = itemView.PanelRect;
+        canvasGroup.alpha = 1f;
+    }
+
+    public void ShowSkill(SkillTooltipSource source)
+    {
+        if (source == null)
+        {
+            Hide();
+            return;
+        }
+
+        skillView.Populate(source.GetSkillTooltipData());
+        skillView.gameObject.SetActive(true);
+        itemView.gameObject.SetActive(false);
+
+        activeRect = skillView.PanelRect;
+        canvasGroup.alpha = 1f;
     }
 
     public void Hide()
     {
         canvasGroup.alpha = 0f;
-    }
-
-    private void ClearStats()
-    {
-        foreach (Transform child in statsContainer)
-        {
-            Destroy(child.gameObject);
-        }
-    }
-
-    private string GetStatName(StatType stat)
-    {
-        switch (stat)
-        {
-            case StatType.MaxHealth:
-                return "Max Health";
-
-            case StatType.MoveSpeed:
-                return "Move Speed";
-
-            case StatType.CriticalChance:
-                return "Critical Chance";
-
-            case StatType.CriticalDamage:
-                return "Critical Damage";
-
-            case StatType.AttackPower:
-                return "Attack Power";
-
-            case StatType.SpellPower:
-                return "Spell Power";
-
-            case StatType.MaxMana:
-                return "Max Mana";
-
-            case StatType.HealthRegen:
-                return "Health Regen";
-
-            case StatType.ManaRegen:
-                return "Mana Regen";
-
-            default:
-                return stat.ToString();
-        }
     }
 }

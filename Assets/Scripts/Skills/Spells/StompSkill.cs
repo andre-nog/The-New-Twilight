@@ -9,6 +9,12 @@ public class StompSkill : Skill
     [Header("Momentum")]
     public float momentumScaling = 0.1f;
 
+    public override float GetExpectedDamage(Player_Combat combat)
+    {
+        float momentum = combat.ResourceManager.CurrentResource;
+        return base.GetExpectedDamage(combat) * (1f + momentum * momentumScaling);
+    }
+
     public override void ExecuteEffect(Player_Combat combat, in CastContext ctx)
     {
         int momentum = combat.ResourceManager.ConsumeAllResource();

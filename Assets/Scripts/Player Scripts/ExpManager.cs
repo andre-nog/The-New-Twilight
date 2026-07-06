@@ -30,11 +30,20 @@ public class ExpManager : MonoBehaviour
     private void OnEnable()
     {
         Enemy_Health.OnMonsterDefeated += GainExperience;
+
+        // Cobre level ups que não passam por GainExperience — edição manual de
+        // "level" no Inspector (StatsManager.OnValidate) ou SetLevel no carregamento
+        // de save. Sem isso, o texto "Level: N" só atualizava na próxima kill.
+        if (StatsManager.Instance != null)
+            StatsManager.Instance.OnLevelChanged += UpdateUI;
     }
 
     private void OnDisable()
     {
         Enemy_Health.OnMonsterDefeated -= GainExperience;
+
+        if (StatsManager.Instance != null)
+            StatsManager.Instance.OnLevelChanged -= UpdateUI;
     }
 
     private void Start()

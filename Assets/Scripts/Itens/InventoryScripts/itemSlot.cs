@@ -323,7 +323,7 @@ public class ItemSlot : MonoBehaviour,
         if (InventoryDragController.Instance != null && InventoryDragController.Instance.IsDragging)
             return;
 
-        TooltipManager.Instance.Show(item);
+        TooltipManager.Instance.ShowItem(item);
     }
 
     public void OnPointerExit(PointerEventData eventData)

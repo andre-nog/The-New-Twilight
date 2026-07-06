@@ -9,6 +9,8 @@ public class StatRowUI : MonoBehaviour
     public void Setup(string name, string value)
     {
         statName.text = name;
+        statName.color = Color.white;
         statValue.text = value;
+        statValue.color = Color.white;
     }
 }

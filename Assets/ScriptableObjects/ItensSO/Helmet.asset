@@ -24,4 +24,5 @@ MonoBehaviour:
     amount: 10
   itemType: 3
   stackable: 0
+  rarity: 1
   id: 7534cb9a60eba174da2a41ff988ed47d

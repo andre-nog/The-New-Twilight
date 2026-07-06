@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PowerStrikeSkill
   skillName: Power Strike
   skillType: 1
-  icon: {fileID: 0}
+  icon: {fileID: 8793915729297761979, guid: 11d365d24c18e1543b37e6c29b18058c, type: 3}
+  description: Power Strike is a melee ability that deals {0} damage to a single
+    target.
+  autoLearnedAtStart: 0
+  levels:
+  - requiredPlayerLevel: 2
+    damageMultiplier: 1
+    manaCost: 10
+    resourceGenerated: 0
+  - requiredPlayerLevel: 2
+    damageMultiplier: 1.1
+    manaCost: 15
+    resourceGenerated: 0
+  - requiredPlayerLevel: 2
+    damageMultiplier: 1.2
+    manaCost: 20
+    resourceGenerated: 0
+  id: 1e52f75bacf5992419babbc15eb60b40
   requiresTarget: 1
   lockMovementDuringCast: 1
   cooldown: 6

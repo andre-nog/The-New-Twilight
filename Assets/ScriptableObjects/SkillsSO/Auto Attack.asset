@@ -15,6 +15,22 @@ MonoBehaviour:
   skillName: Auto Attack
   skillType: 0
   icon: {fileID: 0}
+  description: Auto Attack is a melee ability that deals {0} damage to a single target.
+  autoLearnedAtStart: 1
+  levels:
+  - requiredPlayerLevel: 1
+    damageMultiplier: 0.9
+    manaCost: 0
+    resourceGenerated: 1
+  - requiredPlayerLevel: 1
+    damageMultiplier: 1
+    manaCost: 0
+    resourceGenerated: 1
+  - requiredPlayerLevel: 1
+    damageMultiplier: 1.1
+    manaCost: 0
+    resourceGenerated: 1
+  id: 7183a25b24d72ae4997d69588a61c1a6
   requiresTarget: 1
   lockMovementDuringCast: 1
   cooldown: 1.5
@@ -24,6 +40,7 @@ MonoBehaviour:
   affectedByHaste: 1
   resourceGenerated: 1
   resourceCost: 0
+  manaCost: 0
   hitVFX: {fileID: 0}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: AutoAttack

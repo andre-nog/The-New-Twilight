@@ -13,7 +13,9 @@ public class SkillBarSlot : MonoBehaviour,
     IBeginDragHandler,
     IDragHandler,
     IEndDragHandler,
-    IDropHandler
+    IDropHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     private Image icon;
     private TMP_Text nameText;
@@ -56,9 +58,16 @@ public class SkillBarSlot : MonoBehaviour,
         EnsureRefs();
 
         Skill skill = skillManager != null ? skillManager.GetSkillAt(SlotIndex) : null;
-        bool hasIcon = skill != null && skill.icon != null;
 
-        icon.sprite = hasIcon ? skill.icon : SkillBarUI.GetRuntimeSprite();
+        // Ícone vem do slot (carregado do Livro no drag); cai pra Skill.icon se o slot
+        // não tem um sprite próprio.
+        Sprite iconSprite = skillManager != null ? skillManager.GetIconAt(SlotIndex) : null;
+        if (iconSprite == null && skill != null)
+            iconSprite = skill.icon;
+
+        bool hasIcon = iconSprite != null;
+
+        icon.sprite = hasIcon ? iconSprite : SkillBarUI.GetRuntimeSprite();
         icon.preserveAspect = hasIcon;
         icon.color = hasIcon
             ? Color.white
@@ -121,5 +130,28 @@ public class SkillBarSlot : MonoBehaviour,
     public void OnDrop(PointerEventData eventData)
     {
         SkillDragController.Instance.TryDrop(this);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        EnsureRefs();
+
+        Skill skill = skillManager != null ? skillManager.GetSkillAt(SlotIndex) : null;
+
+        if (skill == null || TooltipManager.Instance == null)
+            return;
+
+        if (SkillDragController.Instance != null && SkillDragController.Instance.IsDragging)
+            return;
+
+        float remaining = skillManager.GetRemainingCooldown(skill);
+
+        TooltipManager.Instance.ShowSkill(new SkillTooltipSource(skill, remaining));
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (TooltipManager.Instance != null)
+            TooltipManager.Instance.Hide();
     }
 }

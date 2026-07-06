@@ -141,7 +141,7 @@ public class EquippedSlot : MonoBehaviour,
         if (InventoryDragController.Instance != null && InventoryDragController.Instance.IsDragging)
             return;
 
-        TooltipManager.Instance.Show(equippedItem);
+        TooltipManager.Instance.ShowItem(equippedItem);
     }
 
     public void OnPointerExit(PointerEventData eventData)

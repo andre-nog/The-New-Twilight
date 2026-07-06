@@ -61,6 +61,9 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        // Antes de SkillBarUI: a barra só semeia slots com skills já aprendidas, então
+        // a progressão precisa existir primeiro.
+        SkillProgression.EnsureCreated();
         SkillBarUI.EnsureCreated();
         InventoryDragController.EnsureCreated();
         SkillDragController.EnsureCreated();
