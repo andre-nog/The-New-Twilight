@@ -15,7 +15,7 @@ MonoBehaviour:
   displayName: Goblin
   maxHealth: 60
   armor: 5
-  attackPower: 0.6
+  attackPower: 0
   criticalChance: 0
   criticalDamage: 100
   expReward: 2

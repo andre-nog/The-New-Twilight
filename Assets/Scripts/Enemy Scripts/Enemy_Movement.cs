@@ -8,13 +8,56 @@ public class Enemy_Movement : MonoBehaviour
     public float attackCooldown = 2;
     public float playerDetectRange = 5;
     public LayerMask playerLayer;
-    public float flipCooldown = 0.3f; 
     public float aggroRange = 10f; // ainda sem uso - não toquei nele agora
     public float loseAggroRange = 15f;
 
+    [Header("Facing (flip)")]
+    // Facing is decided by SMOOTHED horizontal velocity, not by position relative to the target.
+    // Position-based facing flipped every few frames when a crowd shoved an enemy sideways; a
+    // deadband + commit-time on the smoothed velocity means only a sustained horizontal
+    // commitment flips the sprite, so transient separation nudges never do. See UpdateFacing().
+    [SerializeField] private float facingSmoothing = 10f;   // low-pass responsiveness (1/s)
+    [SerializeField] private float flipEnterSpeed = 0.35f;  // min |vx| to commit to a side (u/s)
+    [SerializeField] private float flipCommitTime = 0.12f;  // direction must persist this long to flip
+
+    [Header("Pathing")]
+    [SerializeField] private float repathMoveThreshold = 0.25f; // only repath if target moved more than this
+
+    [Header("Steering / separation")]
+    // The NavMeshAgent is used for PATHFINDING ONLY (updatePosition = false): we read its path
+    // (steeringTarget) and integrate the transform ourselves in Steer(), blending the path
+    // direction with a local separation push from nearby enemies (boids-style). Neighbours come
+    // from the shared EnemyFlockManager spatial hash, so it scales to hundreds of agents. With
+    // the built-in hard avoidance (RVO) also off, enemies no longer form an impassable wall —
+    // they softly spread and flow around each other to surround the target. Every frame we clamp
+    // our own result back onto the navmesh with NavMesh.SamplePosition (see Steer()) so this stays
+    // safe: it is the standard "agent for path, custom motor for movement" pattern, and avoids the
+    // bug where calling agent.Move() while updatePosition=true fights the agent's own automatic
+    // path-following for control of the transform (that caused enemies to warp to the map edge).
+    [SerializeField] private float separationStrength = 1.5f; // strength of the neighbour push (u/s)
+    [SerializeField] private float maxSeparation = 2f;        // clamp on the summed neighbour push
+    [SerializeField] private float navSampleDistance = 0.75f; // max distance allowed when clamping to the navmesh
+
+    [Header("Stuck detection")]
+    // Only request a fresh path when an enemy is GENUINELY jammed (wanted to move but barely
+    // did), never every frame — keeps NavMesh recalculations rare. A short lateral bias breaks
+    // symmetric deadlocks (a wall of enemies directly ahead).
+    [SerializeField] private float stuckCheckInterval = 0.5f;  // sample displacement this often
+    [SerializeField] private float stuckMoveFraction = 0.25f;  // stuck if moved < this * expected
+    [SerializeField] private float unstuckDuration = 0.4f;     // how long the lateral bias lasts
+    [SerializeField] private float unstuckStrength = 1f;       // magnitude of the lateral bias
+
     private float attackCooldownTimer;
     private float repathTimer;
-    private float flipCooldownTimer; // NOVO
+    private float smoothedVelX;      // EMA of our horizontal velocity (drives facing)
+    private float flipCommitTimer;   // how long desired direction has differed from current
+    private Vector3 lastDestination; // last point sent to SetDestination (dedupe repaths)
+    private Vector2 currentVelocity; // our own steering velocity this frame (drives facing)
+    private EnemyFlockManager flock; // shared neighbour spatial hash for separation
+    private float stuckTimer;        // time accumulated since last stuck sample
+    private Vector2 lastStuckPos;    // position at the last stuck sample
+    private float unstuckTimer;      // remaining time of the lateral unstick bias
+    private float unstuckSign;       // +1/-1 side chosen for the unstick bias
     private Rigidbody2D rb;
     private Transform player;
 
@@ -41,11 +84,21 @@ public class Enemy_Movement : MonoBehaviour
     private void Awake()
     {
         PlayerHealth.OnPlayerDied += ForceDeaggro;
+
+        // Register with the shared separation grid. Awake/OnDestroy (not OnEnable/OnDisable) so a
+        // telegraphing enemy — which disables this component (see Enemy_RangedAttack) — still
+        // counts as a neighbour that others steer around while it is frozen.
+        EnemyFlockManager.EnsureExists();
+        flock = EnemyFlockManager.Instance;
+        flock.Register(this);
     }
 
     private void OnDestroy()
     {
         PlayerHealth.OnPlayerDied -= ForceDeaggro;
+
+        if (flock != null)
+            flock.Unregister(this);
     }
 
     // O player morreu — mesmo efeito de perder aggro por distância (solta o alvo e
@@ -76,15 +129,19 @@ public class Enemy_Movement : MonoBehaviour
         agent.updateRotation = false;
         agent.updateUpAxis = false;
 
-        agent.updatePosition = true;
+        // Agent supplies the path only; we drive the transform ourselves in Steer() (see the
+        // "Steering / separation" header above for why).
+        agent.updatePosition = false;
+        agent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
         agent.speed = speed;
-
         agent.autoBraking = false;
 
         if (rb != null)
             rb.bodyType = RigidbodyType2D.Kinematic;
 
         spawnPosition = transform.position;
+        lastDestination = Vector3.positiveInfinity; // force the first SetDestination
+        lastStuckPos = transform.position;
 
         ChangeState(EnemyState.Idle);
     }
@@ -93,9 +150,6 @@ public class Enemy_Movement : MonoBehaviour
     {
         if (attackCooldownTimer > 0)
             attackCooldownTimer -= Time.deltaTime;
-
-        if (flipCooldownTimer > 0)
-            flipCooldownTimer -= Time.deltaTime;
 
         CheckForPlayer();
 
@@ -114,6 +168,8 @@ public class Enemy_Movement : MonoBehaviour
                 StopMoving();
                 break;
         }
+
+        UpdateFacing();
     }
 
     void Chase()
@@ -143,38 +199,120 @@ public class Enemy_Movement : MonoBehaviour
             return;
         }
 
-        if (agent.isOnNavMesh && agent.isStopped)
-            agent.isStopped = false;
-
         repathTimer -= Time.deltaTime;
 
         if (repathTimer <= 0)
         {
-            agent.SetDestination(player.position);
+            // Only repath when the target actually moved — a standing player triggers zero repaths.
+            if ((player.position - lastDestination).sqrMagnitude >= repathMoveThreshold * repathMoveThreshold)
+            {
+                agent.SetDestination(player.position);
+                lastDestination = player.position;
+            }
+
             repathTimer = 0.2f;
         }
 
-        if (flipCooldownTimer <= 0)
-        {
-            float xDiff = player.position.x - transform.position.x;
-
-            if ((xDiff > 0.1f && facingDirection == -1) ||
-                (xDiff < -0.1f && facingDirection == 1))
-            {
-                Flip();
-                flipCooldownTimer = flipCooldown;
-            }
-        }
+        Steer(player.position);
     }
 
-    // Para o movimento sem brigar com o agent.
+    // Stops our own movement. With updatePosition=false the agent's internal path-follow
+    // simulation keeps running in the background regardless, so we pin its simulated position
+    // (nextPosition) to where we actually are — this both prevents it drifting away from reality
+    // while we stand still and is the documented way to keep a manually-driven agent's path
+    // queries (steeringTarget etc.) valid for when we resume.
     void StopMoving()
     {
+        currentVelocity = Vector2.zero;
         if (agent.isOnNavMesh)
+            agent.nextPosition = transform.position;
+    }
+
+    // Integrates our own movement: navmesh path direction blended with a local separation push
+    // from nearby enemies (+ a short lateral bias when jammed), then clamps the result back onto
+    // the navmesh with NavMesh.SamplePosition before writing the transform. This is the "path +
+    // boids separation" model ARPG crowds use — packed enemies flow around each other and
+    // surround the target instead of stacking into a wall — while the sample-clamp keeps them
+    // from ever crossing a wall or leaving the walkable area, no matter how the separation force
+    // pushes them.
+    void Steer(Vector3 destination)
+    {
+        Vector2 pathDir = GetPathDirection(destination);
+
+        Vector2 separation = flock != null ? flock.ComputeSeparation(this) : Vector2.zero;
+        separation = Vector2.ClampMagnitude(separation, maxSeparation) * separationStrength;
+
+        Vector2 desired = pathDir * speed + separation;
+
+        // Short lateral bias after a detected jam — breaks a symmetric wall-of-enemies deadlock.
+        if (unstuckTimer > 0f)
         {
-            agent.isStopped = true;
-            agent.velocity = Vector3.zero;
+            unstuckTimer -= Time.deltaTime;
+            Vector2 perp = new Vector2(-pathDir.y, pathDir.x) * unstuckSign;
+            desired += perp * unstuckStrength;
         }
+
+        Vector3 oldPos = transform.position;
+        Vector3 wantedPos = oldPos + (Vector3)(desired * Time.deltaTime);
+
+        if (NavMesh.SamplePosition(wantedPos, out NavMeshHit hit, navSampleDistance, NavMesh.AllAreas))
+        {
+            // Keep Z untouched — it's driven by sprite Y-sorting, not by the navmesh plane.
+            transform.position = new Vector3(hit.position.x, hit.position.y, oldPos.z);
+            currentVelocity = ((Vector2)transform.position - (Vector2)oldPos) / Mathf.Max(Time.deltaTime, 0.0001f);
+
+            if (agent.isOnNavMesh)
+                agent.nextPosition = transform.position; // keep the agent's path data in sync with reality
+        }
+        else
+        {
+            currentVelocity = Vector2.zero; // no valid nearby navmesh point this frame — hold position
+        }
+
+        UpdateStuck(destination);
+    }
+
+    // Direction along the current navmesh path (toward the next corner), falling back to a
+    // straight line at the destination when there is no path yet. Used to orient the unstick bias.
+    Vector2 GetPathDirection(Vector3 destination)
+    {
+        if (agent.isOnNavMesh && agent.hasPath && !agent.pathPending)
+        {
+            Vector2 toCorner = (Vector2)(agent.steeringTarget - transform.position);
+            if (toCorner.sqrMagnitude > 0.0001f)
+                return toCorner.normalized;
+        }
+
+        Vector2 toDest = (Vector2)(destination - transform.position);
+        return toDest.sqrMagnitude > 0.0001f ? toDest.normalized : Vector2.zero;
+    }
+
+    // Genuine-stuck check: if we wanted to move but barely did over the interval, request ONE
+    // fresh path and pick a side to slip past. This is the only repath trigger besides the
+    // target actually moving, so NavMesh recalculations stay rare.
+    void UpdateStuck(Vector3 destination)
+    {
+        stuckTimer += Time.deltaTime;
+        if (stuckTimer < stuckCheckInterval)
+            return;
+
+        float moved = ((Vector2)transform.position - lastStuckPos).magnitude;
+        float expected = speed * stuckTimer;
+
+        if (moved < expected * stuckMoveFraction)
+        {
+            if (agent.isOnNavMesh)
+            {
+                agent.SetDestination(destination);
+                lastDestination = destination;
+            }
+
+            unstuckSign = Random.value < 0.5f ? 1f : -1f;
+            unstuckTimer = unstuckDuration;
+        }
+
+        lastStuckPos = transform.position;
+        stuckTimer = 0f;
     }
 
     void Flip()
@@ -195,6 +333,55 @@ public class Enemy_Movement : MonoBehaviour
                 healthBarTransform.localScale.z
             );
         }
+    }
+
+    // Decides which way the sprite faces. Driven by SMOOTHED horizontal velocity (with a
+    // deadband + commit timer) while moving, so avoidance jostling and tiny steering
+    // corrections never flip it — only a sustained horizontal commitment does. When the enemy
+    // stops to attack it snaps to the target's side instead.
+    void UpdateFacing()
+    {
+        // Attacking / stopped at range: face the target once, no chatter (velocity ~ 0 here).
+        if (enemyState == EnemyState.Attacking)
+        {
+            if (player != null)
+                FaceTowardX(player.position.x - transform.position.x);
+            return;
+        }
+
+        float dt = Time.deltaTime;
+        float k = 1f - Mathf.Exp(-facingSmoothing * dt); // frame-rate-independent EMA factor
+        smoothedVelX = Mathf.Lerp(smoothedVelX, currentVelocity.x, k);
+
+        // Deadband: below this the horizontal intent is just a steering correction — ignore it.
+        if (Mathf.Abs(smoothedVelX) < flipEnterSpeed)
+        {
+            flipCommitTimer = 0f;
+            return;
+        }
+
+        int desired = smoothedVelX > 0f ? 1 : -1;
+
+        if (desired == facingDirection)
+        {
+            flipCommitTimer = 0f;
+            return;
+        }
+
+        // Opposite side: require the new direction to persist before committing to the flip.
+        flipCommitTimer += dt;
+        if (flipCommitTimer >= flipCommitTime)
+        {
+            Flip();
+            flipCommitTimer = 0f;
+        }
+    }
+
+    // Flips to face a horizontal offset immediately (used when snapping to the attack target).
+    void FaceTowardX(float xDiff)
+    {
+        if (xDiff > 0f && facingDirection == -1) Flip();
+        else if (xDiff < 0f && facingDirection == 1) Flip();
     }
 
     private void CheckForPlayer()
@@ -326,6 +513,15 @@ public class Enemy_Movement : MonoBehaviour
         anim.SetBool("isAttacking", true);
     else if (enemyState == EnemyState.Returning)
         anim.SetBool("isChasing", true);
+
+        // Start stuck sampling fresh when we (re)start moving, so a just-resumed enemy isn't
+        // flagged as stuck by leftover state from before it stopped.
+        if (newState == EnemyState.Chasing || newState == EnemyState.Returning)
+        {
+            lastStuckPos = transform.position;
+            stuckTimer = 0f;
+            unstuckTimer = 0f;
+        }
     }
 
     void ReturnToSpawn()
@@ -333,21 +529,11 @@ public class Enemy_Movement : MonoBehaviour
         if (!agent.isOnNavMesh)
             return;
 
-        if (agent.isStopped)
-            agent.isStopped = false;
-
-        agent.SetDestination(spawnPosition);
-
-        if (flipCooldownTimer <= 0)
+        // spawnPosition is fixed — set it once instead of every frame.
+        if (lastDestination != spawnPosition)
         {
-            float xDiff = spawnPosition.x - transform.position.x;
-
-            if ((xDiff > 0.1f && facingDirection == -1) ||
-                (xDiff < -0.1f && facingDirection == 1))
-            {
-                Flip();
-                flipCooldownTimer = flipCooldown;
-            }
+            agent.SetDestination(spawnPosition);
+            lastDestination = spawnPosition;
         }
 
         float distance = Vector2.Distance(
@@ -366,7 +552,10 @@ public class Enemy_Movement : MonoBehaviour
                 enemyHealth.ResetEnemy();
 
             ChangeState(EnemyState.Idle);
+            return;
         }
+
+        Steer(spawnPosition);
     }
 
     public void EndAttack()
