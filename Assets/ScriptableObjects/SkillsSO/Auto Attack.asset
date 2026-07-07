@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AutoAttackSkill
   skillName: Auto Attack
   skillType: 0
-  icon: {fileID: 0}
+  icon: {fileID: 8793915729297761979, guid: 11d365d24c18e1543b37e6c29b18058c, type: 3}
   description: Auto Attack is a melee ability that deals {0} damage to a single target.
   autoLearnedAtStart: 1
   levels:

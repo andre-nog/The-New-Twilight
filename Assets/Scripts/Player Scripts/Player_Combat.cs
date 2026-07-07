@@ -6,6 +6,7 @@ public class Player_Combat : MonoBehaviour
     public PlayerTargeting playerTargeting;
     public bool isAttacking { get; private set; }
     public PlayerMovement playerMovement;
+    public PlayerInteraction playerInteraction;
     public ResourceManager ResourceManager => resourceManager;
 
     // Contexto do cast em andamento — escrito UMA vez por tentativa de cast
@@ -194,6 +195,7 @@ public class Player_Combat : MonoBehaviour
 
         if (distance > skill.range)
         {
+            playerInteraction.CancelInteract();
             movingToAttack = true;
             playerMovement.autoMoving = true;
             return;

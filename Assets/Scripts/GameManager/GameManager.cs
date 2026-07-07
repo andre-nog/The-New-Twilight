@@ -169,7 +169,8 @@ public class GameManager : MonoBehaviour
                 position = Player.position
             },
             inventory = InventoryManager.Instance != null ? InventoryManager.Instance.GetState() : new(),
-            equipment = EquipmentManager.Instance != null ? EquipmentManager.Instance.GetState() : new()
+            equipment = EquipmentManager.Instance != null ? EquipmentManager.Instance.GetState() : new(),
+            quests = QuestManager.Instance != null ? QuestManager.Instance.GetState() : new()
         };
 
         SaveService.Save(data);
@@ -216,6 +217,9 @@ public class GameManager : MonoBehaviour
 
         if (expManager != null)
             expManager.UpdateUI();
+
+        if (QuestManager.Instance != null)
+            QuestManager.Instance.ApplyState(data.quests);
 
         Debug.Log("Jogo carregado.");
     }

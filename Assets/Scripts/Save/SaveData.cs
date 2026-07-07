@@ -11,6 +11,7 @@ public class SaveData
     public PlayerSave player = new();
     public List<ItemStackSave> inventory = new();
     public List<EquippedSave> equipment = new();
+    public List<QuestSave> quests = new();
 }
 
 [Serializable]
@@ -37,4 +38,12 @@ public class EquippedSave
 {
     public int slotIndex;
     public string itemId;
+}
+
+[Serializable]
+public class QuestSave
+{
+    public string questId;
+    public int state;
+    public int progress;
 }

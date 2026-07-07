@@ -11,14 +11,20 @@ using UnityEngine.UI;
 // hotbar já existente.
 public static class SkillBookCanvasBuilder
 {
-    private const float SlotSize = 76f;
-    private const float GridSpacing = 8f;
-    private const float GridPadding = 12f;
-    private const float TitleBarHeight = 32f;
+    private const float SlotSize = 92f;
+    private const float GridSpacing = 14f;
+    private const float GridPadding = 16f;
+    private const float TitleBarHeight = 38f;
     private const int Columns = 3;
     private const string CanvasName = "Skill Book Canvas";
 
+    private static readonly Color OutlineColor = new(0.55f, 0.6f, 0.7f, 0.9f);
+    private static readonly Vector2 OutlineDistance = new(2f, -2f);
+    private static readonly Color ButtonColor = new(0.12f, 0.14f, 0.18f, 0.95f);
+
     private static Sprite runtimeSprite;
+    private static TMP_FontAsset bangersFont;
+    private static TMP_FontAsset defaultFont;
 
     // Lista fixa e ordenada das skills que já existem no projeto — casadas pelo
     // campo Skill.skillName (mais robusto que casar pelo nome do arquivo do asset).
@@ -76,7 +82,13 @@ public static class SkillBookCanvasBuilder
         panelBackground.sprite = GetRuntimeSprite();
         panelBackground.color = new Color(0.04f, 0.05f, 0.07f, 0.9f);
 
-        TMP_Text title = CreateText("Title", panel, "Skills", 20f, TextAlignmentOptions.Center);
+        // Faltava a moldura que Tooltip/Quest Window têm — sem isso o painel ficava
+        // "lavado", sem contraste contra o fundo do jogo.
+        Outline panelOutline = panel.gameObject.AddComponent<Outline>();
+        panelOutline.effectColor = OutlineColor;
+        panelOutline.effectDistance = OutlineDistance;
+
+        TMP_Text title = CreateText("Title", panel, "Skills", 25f, TextAlignmentOptions.Center);
         title.fontStyle = FontStyles.Bold;
         title.rectTransform.anchorMin = new Vector2(0.5f, 1f);
         title.rectTransform.anchorMax = new Vector2(0.5f, 1f);
@@ -118,19 +130,52 @@ public static class SkillBookCanvasBuilder
         TMP_Text pointsText = BuildPointsLabel(panel);
         skillBookUI.Configure(bookSlots.ToArray(), pointsText);
 
+        BuildCloseButton(panel);
+
         Selection.activeGameObject = canvasObject;
+    }
+
+    // "X" no canto superior direito do painel — mesmo estilo/tamanho do close
+    // button da Quest Window. Painel aqui não tem LayoutGroup (Title/Grid/Points
+    // já são posicionados manualmente por anchor), então não precisa de
+    // LayoutElement.ignoreLayout como lá.
+    private static void BuildCloseButton(Transform panelParent)
+    {
+        RectTransform rect = CreateUIObject("Close Button", panelParent);
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-6f, -6f);
+        rect.sizeDelta = new Vector2(22f, 22f);
+
+        Image background = rect.gameObject.AddComponent<Image>();
+        background.sprite = GetRuntimeSprite();
+        background.color = ButtonColor;
+        background.raycastTarget = true;
+
+        Outline outline = rect.gameObject.AddComponent<Outline>();
+        outline.effectColor = OutlineColor;
+        outline.effectDistance = OutlineDistance;
+
+        TMP_Text text = CreateText("Label", rect, "X", 16f, TextAlignmentOptions.Center);
+        SetStretch(text.rectTransform, 0f);
+        text.fontStyle = FontStyles.Bold;
+
+        rect.gameObject.AddComponent<SkillBookCloseButton>();
     }
 
     // "Points: N" no canto superior direito da barra de título (o título "Skills"
     // fica centralizado; textos curtos não colidem).
     private static TMP_Text BuildPointsLabel(RectTransform panel)
     {
-        TMP_Text points = CreateText("Points", panel, "Points: 0", 14f, TextAlignmentOptions.Right);
+        TMP_Text points = CreateText("Points", panel, "Points: 0", 18f, TextAlignmentOptions.Right);
         points.rectTransform.anchorMin = new Vector2(0f, 1f);
         points.rectTransform.anchorMax = new Vector2(1f, 1f);
         points.rectTransform.pivot = new Vector2(0.5f, 1f);
-        points.rectTransform.anchoredPosition = Vector2.zero;
-        points.rectTransform.sizeDelta = new Vector2(-16f, TitleBarHeight);
+        // Folga bem maior que o botão de fechar (22 + 6 de gap) pra não ficar
+        // grudado nele — primeira tentativa (34/16) ainda ficava perto demais.
+        points.rectTransform.anchoredPosition = new Vector2(-26f, 0f);
+        points.rectTransform.sizeDelta = new Vector2(-50f, TitleBarHeight);
         points.textWrappingMode = TextWrappingModes.NoWrap;
         points.fontStyle = FontStyles.Bold;
         return points;
@@ -173,7 +218,7 @@ public static class SkillBookCanvasBuilder
         icon.preserveAspect = hasIcon;
         icon.color = Color.white; // o Refresh() em runtime escurece se estiver travada
 
-        TMP_Text nameText = CreateText("Name", slot, displayName, 12f, TextAlignmentOptions.Bottom);
+        TMP_Text nameText = CreateText("Name", slot, displayName, 15f, TextAlignmentOptions.Bottom);
         nameText.rectTransform.anchorMin = new Vector2(0f, 0f);
         nameText.rectTransform.anchorMax = new Vector2(1f, 0f);
         nameText.rectTransform.pivot = new Vector2(0.5f, 0f);
@@ -183,7 +228,7 @@ public static class SkillBookCanvasBuilder
         nameText.color = Color.white;
 
         // Pips de nível (topo do slot) — preenchido pelo Refresh() em runtime (●●○).
-        TMP_Text pips = CreateText("Pips", slot, string.Empty, 12f, TextAlignmentOptions.Top);
+        TMP_Text pips = CreateText("Pips", slot, string.Empty, 15f, TextAlignmentOptions.Top);
         pips.rectTransform.anchorMin = new Vector2(0f, 1f);
         pips.rectTransform.anchorMax = new Vector2(1f, 1f);
         pips.rectTransform.pivot = new Vector2(0.5f, 1f);
@@ -191,14 +236,18 @@ public static class SkillBookCanvasBuilder
         pips.rectTransform.sizeDelta = new Vector2(-8f, 16f);
         pips.textWrappingMode = TextWrappingModes.NoWrap;
 
-        Button plusButton = BuildPlusButton(slot);
-
         // Overlay de "bloqueada" — raycastTarget desligado (via CreateImage) pra não
         // engolir o clique do botão "+" quando a skill está travada mas aprendível.
+        // Criado ANTES do botão "+" pra ser sibling anterior: UGUI desenha por ordem
+        // de filho, então o "+" (criado depois) fica por cima do overlay. Antes o "+"
+        // sumia sob o overlay preto 55% justo quando a skill tava travada — que é
+        // exatamente o estado em que precisa do "+" pra gastar ponto.
         Image lockedOverlay = CreateImage("Locked Overlay", slot, new Color(0f, 0f, 0f, 0.55f));
         SetStretch(lockedOverlay.rectTransform, 0f);
         lockedOverlay.sprite = GetRuntimeSprite();
         lockedOverlay.gameObject.SetActive(false);
+
+        Button plusButton = BuildPlusButton(slot);
 
         SkillBookSlot bookSlot = slot.gameObject.AddComponent<SkillBookSlot>();
         bookSlot.Configure(skill, icon, plusButton, pips, lockedOverlay.gameObject);
@@ -215,7 +264,7 @@ public static class SkillBookCanvasBuilder
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
         rect.anchoredPosition = new Vector2(-2f, -2f);
-        rect.sizeDelta = new Vector2(22f, 22f);
+        rect.sizeDelta = new Vector2(26f, 26f);
 
         Image image = rect.gameObject.AddComponent<Image>();
         image.sprite = GetRuntimeSprite();
@@ -225,9 +274,21 @@ public static class SkillBookCanvasBuilder
         Button button = rect.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
 
-        TMP_Text plus = CreateText("Plus Text", rect, "+", 18f, TextAlignmentOptions.Center);
+        TMP_Text plus = CreateText("Plus Text", rect, "+", 30f, TextAlignmentOptions.Center);
         SetStretch(plus.rectTransform, 0f);
         plus.fontStyle = FontStyles.Bold;
+
+        // Truncate (padrão do CreateText) corta o glifo no limite do box 26x26, que
+        // travava o "+" em ~19. Overflow deixa desenhar além dos bounds, centralizado,
+        // então a fonte pode subir sem clip.
+        plus.overflowMode = TextOverflowModes.Overflow;
+
+        // Fica na fonte padrão do TMP por pedido, não a Bangers SDF que o resto
+        // do Skill Book usa — CreateText já aplicou Bangers, sobrescreve de volta.
+        TMP_FontAsset plusFont = GetDefaultFont();
+
+        if (plusFont != null)
+            plus.font = plusFont;
 
         return button;
     }
@@ -265,7 +326,29 @@ public static class SkillBookCanvasBuilder
         text.color = Color.white;
         text.raycastTarget = false;
         text.overflowMode = TextOverflowModes.Truncate;
+
+        TMP_FontAsset font = GetBangersFont();
+
+        if (font != null)
+            text.font = font;
+
         return text;
+    }
+
+    private static TMP_FontAsset GetBangersFont()
+    {
+        if (bangersFont == null)
+            bangersFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Bangers SDF");
+
+        return bangersFont;
+    }
+
+    private static TMP_FontAsset GetDefaultFont()
+    {
+        if (defaultFont == null)
+            defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+
+        return defaultFont;
     }
 
     private static void SetStretch(RectTransform rectTransform, float margin)

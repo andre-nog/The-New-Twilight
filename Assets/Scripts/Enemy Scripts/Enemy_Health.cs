@@ -5,7 +5,7 @@ using UnityEngine.UI;
 [RequireComponent(typeof(EnemyStats))]
 public class Enemy_Health : MonoBehaviour, IDamageable
 {
-    public delegate void MonsterDefeated(int exp);
+    public delegate void MonsterDefeated(int exp, string displayName);
     public static event MonsterDefeated OnMonsterDefeated;
 
     // Registro de inimigos vivos na cena — evita FindGameObjectsWithTag em quem
@@ -78,7 +78,7 @@ public class Enemy_Health : MonoBehaviour, IDamageable
 
         if (currentHealth <= 0)
         {
-            OnMonsterDefeated?.Invoke(stats.ExpReward);
+            OnMonsterDefeated?.Invoke(stats.ExpReward, stats.DisplayName);
             Destroy(gameObject);
         }
     }

@@ -24,6 +24,7 @@ public static class TooltipCanvasBuilder
     private static readonly Vector2 OutlineDistance = new(2f, -2f);
 
     private static Sprite runtimeSprite;
+    private static TMP_FontAsset bangersFont;
 
     [MenuItem("Tools/Tooltip/Build Tooltip Canvas")]
     private static void Build()
@@ -71,12 +72,12 @@ public static class TooltipCanvasBuilder
     {
         RectTransform panel = CreatePanel("Item Tooltip", parent);
 
-        TMP_Text nameText = CreateText("Name", panel, string.Empty, 30f, TextAlignmentOptions.TopLeft);
+        TMP_Text nameText = CreateText("Name", panel, string.Empty, 33f, TextAlignmentOptions.TopLeft);
         nameText.fontStyle = FontStyles.Bold;
 
-        TMP_Text rarityText = CreateText("Rarity", panel, string.Empty, 14f, TextAlignmentOptions.TopLeft);
+        TMP_Text rarityText = CreateText("Rarity", panel, string.Empty, 16f, TextAlignmentOptions.TopLeft);
 
-        TMP_Text slotText = CreateText("Slot", panel, string.Empty, 15f, TextAlignmentOptions.TopLeft);
+        TMP_Text slotText = CreateText("Slot", panel, string.Empty, 17f, TextAlignmentOptions.TopLeft);
 
         RectTransform statsContainer = CreateUIObject("Stats Container", panel);
 
@@ -90,7 +91,7 @@ public static class TooltipCanvasBuilder
         statsLayout.childControlWidth = true;
         statsLayout.childControlHeight = true;
 
-        TMP_Text descriptionText = CreateText("Description", panel, string.Empty, 15f, TextAlignmentOptions.TopLeft);
+        TMP_Text descriptionText = CreateText("Description", panel, string.Empty, 17f, TextAlignmentOptions.TopLeft);
 
         GameObject statRowPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StatRowPrefabPath);
 
@@ -106,12 +107,12 @@ public static class TooltipCanvasBuilder
     {
         RectTransform panel = CreatePanel("Skill Tooltip", parent);
 
-        TMP_Text nameText = CreateText("Name", panel, string.Empty, 30f, TextAlignmentOptions.TopLeft);
+        TMP_Text nameText = CreateText("Name", panel, string.Empty, 33f, TextAlignmentOptions.TopLeft);
         nameText.fontStyle = FontStyles.Bold;
 
-        TMP_Text levelText = CreateText("Level", panel, string.Empty, 15f, TextAlignmentOptions.TopLeft);
-        TMP_Text metaLineText = CreateText("Meta Line", panel, string.Empty, 15f, TextAlignmentOptions.TopLeft);
-        TMP_Text descriptionText = CreateText("Description", panel, string.Empty, 15f, TextAlignmentOptions.TopLeft);
+        TMP_Text levelText = CreateText("Level", panel, string.Empty, 17f, TextAlignmentOptions.TopLeft);
+        TMP_Text metaLineText = CreateText("Meta Line", panel, string.Empty, 17f, TextAlignmentOptions.TopLeft);
+        TMP_Text descriptionText = CreateText("Description", panel, string.Empty, 17f, TextAlignmentOptions.TopLeft);
 
         SkillTooltipView skillView = panel.gameObject.AddComponent<SkillTooltipView>();
         skillView.Configure(nameText, levelText, metaLineText, descriptionText);
@@ -186,7 +187,21 @@ public static class TooltipCanvasBuilder
         text.color = Color.white;
         text.raycastTarget = false;
         text.overflowMode = TextOverflowModes.Truncate;
+
+        TMP_FontAsset font = GetBangersFont();
+
+        if (font != null)
+            text.font = font;
+
         return text;
+    }
+
+    private static TMP_FontAsset GetBangersFont()
+    {
+        if (bangersFont == null)
+            bangersFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Bangers SDF");
+
+        return bangersFont;
     }
 
     private static Sprite GetRuntimeSprite()

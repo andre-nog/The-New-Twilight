@@ -9,9 +9,17 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
 
     [SerializeField] private LayerMask enemyLayerMask;
 
+    [Tooltip("Cursor customizado pro hover de inimigo — se vazio, usa um círculo vermelho gerado em runtime como placeholder.")]
+    [SerializeField] private Texture2D customCursor;
+
+    [SerializeField] private Vector2 cursorHotspot = new(10f, 10f);
+
     public GameObject currentTarget;
 
     private Color originalColor;
+    private GameObject hoveredEnemy;
+    private static readonly Color HoverOutlineColor = Color.red;
+    private static Texture2D generatedCursor;
 
     private void OnEnable()
     {
@@ -23,6 +31,8 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
     {
         selectTarget.action.Disable();
         targetNext.action.Disable();
+
+        ClearHover();
     }
 
     private void Start()
@@ -38,6 +48,8 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
 
     private void Update()
     {
+        UpdateHover();
+
         if (selectTarget.action.WasPressedThisFrame())
             CheckEnemyClick();
 
@@ -45,15 +57,85 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
             SelectNextEnemy();
     }
 
+    private void UpdateHover()
+    {
+        GameObject target = FindEnemyUnderMouse();
+
+        if (target == hoveredEnemy)
+            return;
+
+        if (hoveredEnemy != null)
+            hoveredEnemy.GetComponent<HoverOutline>()?.SetVisible(false, HoverOutlineColor);
+
+        hoveredEnemy = target;
+
+        if (hoveredEnemy != null)
+        {
+            HoverOutline outline = hoveredEnemy.GetComponent<HoverOutline>();
+
+            if (outline == null)
+                outline = hoveredEnemy.AddComponent<HoverOutline>();
+
+            outline.SetVisible(true, HoverOutlineColor);
+
+            Cursor.SetCursor(GetCursorTexture(), cursorHotspot, CursorMode.Auto);
+            HoverCursorState.CurrentOwner = this;
+        }
+        else if (HoverCursorState.CurrentOwner == (object)this)
+        {
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+            HoverCursorState.CurrentOwner = null;
+        }
+    }
+
+    private void ClearHover()
+    {
+        if (hoveredEnemy != null)
+        {
+            hoveredEnemy.GetComponent<HoverOutline>()?.SetVisible(false, HoverOutlineColor);
+            hoveredEnemy = null;
+        }
+
+        if (HoverCursorState.CurrentOwner == (object)this)
+        {
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+            HoverCursorState.CurrentOwner = null;
+        }
+    }
+
+    private Texture2D GetCursorTexture()
+    {
+        if (customCursor != null)
+            return customCursor;
+
+        if (generatedCursor == null)
+            generatedCursor = CursorTextureFactory.CreateOrb(Color.red);
+
+        return generatedCursor;
+    }
+
     private void CheckEnemyClick()
     {
+        GameObject bestTarget = FindEnemyUnderMouse();
+
+        if (bestTarget != null)
+            SelectTarget(bestTarget);
+    }
+
+    // Reaproveitado tanto pelo clique (CheckEnemyClick) quanto pelo hover a cada
+    // frame (UpdateHover) — mesmo OverlapPointAll + maior sortingOrder de sempre.
+    private GameObject FindEnemyUnderMouse()
+    {
+        if (Mouse.current == null || Camera.main == null)
+            return null;
+
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(
             Mouse.current.position.ReadValue());
 
         Collider2D[] hits = Physics2D.OverlapPointAll(mousePos, enemyLayerMask);
 
         if (hits.Length == 0)
-            return;
+            return null;
 
         GameObject bestTarget = null;
         int bestSortingOrder = int.MinValue;
@@ -77,8 +159,7 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
             }
         }
 
-        if (bestTarget != null)
-            SelectTarget(bestTarget);
+        return bestTarget;
     }
 
     private void SelectTarget(GameObject target)

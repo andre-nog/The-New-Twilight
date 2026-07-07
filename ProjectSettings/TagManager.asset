@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Enemy
+  - NPC
   layers:
   - Default
   - TransparentFX
@@ -15,7 +16,7 @@ TagManager:
   - Enemy
   - Ground
   - Item
-  - 
+  - NPC
   - 
   - 
   - 
@@ -40,22 +41,19 @@ TagManager:
   - 
   m_SortingLayers:
   - name: Ground
-    uniqueID: 3114431665
+    uniqueID: 4138970915
     locked: 0
   - name: Player
-    uniqueID: 961425797
+    uniqueID: 4183864605
     locked: 0
   - name: Enemy
-    uniqueID: 812654909
+    uniqueID: 3870641307
     locked: 0
-  - name: High
-    uniqueID: 3248516619
+  - name: NPC
+    uniqueID: 3506822185
     locked: 0
   - name: Default
     uniqueID: 0
-    locked: 0
-  - name: DmgNumbers
-    uniqueID: 2068430175
     locked: 0
   m_RenderingLayers:
   - Default

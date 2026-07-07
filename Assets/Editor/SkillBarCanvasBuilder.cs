@@ -14,9 +14,12 @@ public static class SkillBarCanvasBuilder
 {
     private const float SlotSize = 76f;
     private const int SlotCount = 9;
+    private const float BarPadding = 8f;
+    private const float BarSpacing = 8f;
     private const string CanvasName = "Skill Bar Canvas";
 
     private static Sprite runtimeSprite;
+    private static TMP_FontAsset bangersFont;
 
     [MenuItem("Tools/Skill Bar/Build Skill Bar Canvas")]
     private static void Build()
@@ -50,15 +53,25 @@ public static class SkillBarCanvasBuilder
         bar.anchorMax = new Vector2(0.5f, 0f);
         bar.pivot = new Vector2(0.5f, 0f);
         bar.anchoredPosition = new Vector2(0f, 28f);
-        bar.sizeDelta = new Vector2(SlotSize * SlotCount + 32f, SlotSize + 16f);
+
+        // Largura precisa contar TODOS os gaps entre slots (SlotCount - 1), não só
+        // o padding — o cálculo antigo (SlotSize * SlotCount + 32f) ficava curto e o
+        // fundo não cobria o último slot.
+        float barWidth = SlotSize * SlotCount + BarSpacing * (SlotCount - 1) + BarPadding * 2f;
+        float barHeight = SlotSize + BarPadding * 2f;
+        bar.sizeDelta = new Vector2(barWidth, barHeight);
 
         Image barBackground = bar.gameObject.AddComponent<Image>();
         barBackground.sprite = GetRuntimeSprite();
         barBackground.color = new Color(0.04f, 0.05f, 0.07f, 0.8f);
 
         HorizontalLayoutGroup layout = bar.gameObject.AddComponent<HorizontalLayoutGroup>();
-        layout.padding = new RectOffset(8, 8, 8, 8);
-        layout.spacing = 8f;
+        layout.padding = new RectOffset(
+            Mathf.RoundToInt(BarPadding),
+            Mathf.RoundToInt(BarPadding),
+            Mathf.RoundToInt(BarPadding),
+            Mathf.RoundToInt(BarPadding));
+        layout.spacing = BarSpacing;
         layout.childAlignment = TextAnchor.MiddleCenter;
         layout.childControlWidth = false;
         layout.childControlHeight = false;
@@ -107,12 +120,12 @@ public static class SkillBarCanvasBuilder
         cooldown.fillAmount = 0f;
         cooldown.enabled = false;
 
-        TMP_Text keyText = CreateText("Key", slot, key, 19f, TextAlignmentOptions.TopLeft);
+        TMP_Text keyText = CreateText("Key", slot, key, 21f, TextAlignmentOptions.TopLeft);
         SetStretch(keyText.rectTransform, 5f);
         keyText.fontStyle = FontStyles.Bold;
         keyText.color = new Color(1f, 0.86f, 0.35f, 1f);
 
-        TMP_Text nameText = CreateText("Name", slot, "Empty", 12f, TextAlignmentOptions.Bottom);
+        TMP_Text nameText = CreateText("Name", slot, "Empty", 13f, TextAlignmentOptions.Bottom);
         nameText.rectTransform.anchorMin = new Vector2(0f, 0f);
         nameText.rectTransform.anchorMax = new Vector2(1f, 0f);
         nameText.rectTransform.pivot = new Vector2(0.5f, 0f);
@@ -124,7 +137,7 @@ public static class SkillBarCanvasBuilder
             "Cooldown Text",
             slot,
             string.Empty,
-            24f,
+            26f,
             TextAlignmentOptions.Center);
         SetStretch(cooldownText.rectTransform, 0f);
         cooldownText.fontStyle = FontStyles.Bold;
@@ -168,7 +181,21 @@ public static class SkillBarCanvasBuilder
         text.color = Color.white;
         text.raycastTarget = false;
         text.overflowMode = TextOverflowModes.Truncate;
+
+        TMP_FontAsset font = GetBangersFont();
+
+        if (font != null)
+            text.font = font;
+
         return text;
+    }
+
+    private static TMP_FontAsset GetBangersFont()
+    {
+        if (bangersFont == null)
+            bangersFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Bangers SDF");
+
+        return bangersFont;
     }
 
     private static void SetStretch(RectTransform rectTransform, float margin)

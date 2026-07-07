@@ -12,7 +12,12 @@ public class ExpManager : MonoBehaviour
     public int baseExpToLevel = 10;
     public float expGrowthMultiplier = 1.2f;
 
-    public Slider expSlider;
+    // Image.fillAmount em vez de Slider — Slider.set_maxValue dispara um rebuild de
+    // layout via SendMessage internamente, o que gera "SendMessage cannot be called
+    // during Awake/OnValidate" quando UpdateUI() é chamado a partir de
+    // StatsManager.OnValidate (edição de "level" no Inspector). Image.fillAmount não
+    // tem esse problema.
+    public Image expFillImage;
     public TMP_Text currentLevelText;
 
     // Derivado do nível atual em vez de acumulado a cada level up — assim não há
@@ -27,9 +32,14 @@ public class ExpManager : MonoBehaviour
         }
     }
 
+    // OnMonsterDefeated agora carrega displayName (pra QuestManager filtrar por
+    // tipo de inimigo) — GainExperience não precisa dele, daí o lambda.
+    private Enemy_Health.MonsterDefeated onMonsterDefeatedHandler;
+
     private void OnEnable()
     {
-        Enemy_Health.OnMonsterDefeated += GainExperience;
+        onMonsterDefeatedHandler = (exp, _) => GainExperience(exp);
+        Enemy_Health.OnMonsterDefeated += onMonsterDefeatedHandler;
 
         // Cobre level ups que não passam por GainExperience — edição manual de
         // "level" no Inspector (StatsManager.OnValidate) ou SetLevel no carregamento
@@ -40,7 +50,7 @@ public class ExpManager : MonoBehaviour
 
     private void OnDisable()
     {
-        Enemy_Health.OnMonsterDefeated -= GainExperience;
+        Enemy_Health.OnMonsterDefeated -= onMonsterDefeatedHandler;
 
         if (StatsManager.Instance != null)
             StatsManager.Instance.OnLevelChanged -= UpdateUI;
@@ -72,11 +82,8 @@ public class ExpManager : MonoBehaviour
 
     public void UpdateUI()
     {
-        if (expSlider != null)
-        {
-            expSlider.maxValue = ExpToLevel;
-            expSlider.value = currentExp;
-        }
+        if (expFillImage != null)
+            expFillImage.fillAmount = ExpToLevel > 0 ? (float)currentExp / ExpToLevel : 0f;
 
         if (currentLevelText != null && StatsManager.Instance != null)
             currentLevelText.text = "Level: " + StatsManager.Instance.level;

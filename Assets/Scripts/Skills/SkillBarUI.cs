@@ -8,6 +8,7 @@ public class SkillBarUI : MonoBehaviour
 
     private const int SlotCount = 9;
     private static Sprite runtimeSprite;
+    private static TMP_FontAsset bangersFont;
 
     private PlayerSkillManager skillManager;
     public PlayerSkillManager SkillManager => skillManager;
@@ -195,7 +196,9 @@ public class SkillBarUI : MonoBehaviour
         momentumBar.anchorMin = new Vector2(0.5f, 0f);
         momentumBar.anchorMax = new Vector2(0.5f, 0f);
         momentumBar.pivot = new Vector2(0.5f, 0f);
-        momentumBar.anchoredPosition = new Vector2(0f, 128f);
+        // 162 em vez de 128 — abre espaço pro XP Canvas (128-154) entre a Skill Bar
+        // e o Momentum. Ver Assets/Editor/ExpCanvasBuilder.cs.
+        momentumBar.anchoredPosition = new Vector2(0f, 162f);
         momentumBar.sizeDelta = new Vector2(barWidth, segmentHeight + 12f);
 
         Image background = momentumBar.gameObject.AddComponent<Image>();
@@ -262,11 +265,13 @@ public class SkillBarUI : MonoBehaviour
         const float barWidth = 240f;
         const float barHeight = 24f;
 
+        // 200 em vez de 168 — deslocado pra abrir espaço pro XP Canvas + Momentum
+        // realocado (162). Ver Assets/Editor/ExpCanvasBuilder.cs.
         (manaFillImage, manaBarText) = CreateVitalBar(
-            "Mana Bar", 168f, barWidth, barHeight, new Color(0.2f, 0.4f, 0.9f, 1f));
+            "Mana Bar", 200f, barWidth, barHeight, new Color(0.2f, 0.4f, 0.9f, 1f));
 
         (healthFillImage, healthBarText) = CreateVitalBar(
-            "Health Bar", 168f + barHeight + 8f, barWidth, barHeight, new Color(0.8f, 0.15f, 0.15f, 1f));
+            "Health Bar", 200f + barHeight + 8f, barWidth, barHeight, new Color(0.8f, 0.15f, 0.15f, 1f));
     }
 
     private (Image fill, TMP_Text text) CreateVitalBar(
@@ -291,7 +296,7 @@ public class SkillBarUI : MonoBehaviour
         fill.fillAmount = 1f;
         SetStretch(fill.rectTransform, 2f);
 
-        TMP_Text text = CreateText(objectName + " Text", bar, string.Empty, 14f, TextAlignmentOptions.Center);
+        TMP_Text text = CreateText(objectName + " Text", bar, string.Empty, 16f, TextAlignmentOptions.Center);
         SetStretch(text.rectTransform, 0f);
         text.fontStyle = FontStyles.Bold;
 
@@ -338,7 +343,7 @@ public class SkillBarUI : MonoBehaviour
         background.sprite = GetRuntimeSprite();
         background.color = new Color(0.04f, 0.05f, 0.07f, 0.75f);
 
-        debugStatsText = CreateText("Stats Text", panel, string.Empty, 15f, TextAlignmentOptions.TopLeft);
+        debugStatsText = CreateText("Stats Text", panel, string.Empty, 17f, TextAlignmentOptions.TopLeft);
         SetStretch(debugStatsText.rectTransform, 10f);
         debugStatsText.textWrappingMode = TextWrappingModes.NoWrap;
     }
@@ -361,7 +366,7 @@ public class SkillBarUI : MonoBehaviour
             $"Armor: {s.Armor:0.#}\n" +
             $"Crit Chance: {s.CriticalChance:0.#}%\n" +
             $"Crit Damage: {s.CriticalDamage:0.#}%\n" +
-            $"Haste: {s.Haste:0.##}\n" +
+            $"Haste: {s.Haste * 100:0.#}%\n" +
             $"Health Regen: {s.HealthRegen:0.##}\n" +
             $"Mana Regen: {s.ManaRegen:0.##}\n" +
             $"Move Speed: {s.MoveSpeed:0.#}";
@@ -400,7 +405,21 @@ public class SkillBarUI : MonoBehaviour
         text.color = Color.white;
         text.raycastTarget = false;
         text.overflowMode = TextOverflowModes.Truncate;
+
+        TMP_FontAsset font = GetBangersFont();
+
+        if (font != null)
+            text.font = font;
+
         return text;
+    }
+
+    private static TMP_FontAsset GetBangersFont()
+    {
+        if (bangersFont == null)
+            bangersFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Bangers SDF");
+
+        return bangersFont;
     }
 
     private static void SetStretch(RectTransform rectTransform, float margin)

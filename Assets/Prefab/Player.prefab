@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 2989374582786110942}
   - component: {fileID: 2853336494491287680}
   - component: {fileID: 6366726637633127477}
+  - component: {fileID: 231425218}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -86,8 +87,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 961425797
-  m_SortingLayer: -3
+  m_SortingLayerID: -111102691
+  m_SortingLayer: 1
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 1448252480329919801, guid: c57fa857f0a5bd04495248c41ed789c0, type: 3}
@@ -221,6 +222,7 @@ MonoBehaviour:
   anim: {fileID: 4459130726719715029}
   playerTargeting: {fileID: 748403953819865534}
   playerMovement: {fileID: 2284073893715237952}
+  playerInteraction: {fileID: 231425218}
   enemyLayer:
     serializedVersion: 2
     m_Bits: 64
@@ -293,3 +295,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ResourceManager
   resourceName: Momentum
   maxResource: 6
+--- !u!114 &231425218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8687327442297997352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06720c3829e04e0cbb5a8eb157cad059, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
+  playerMovement: {fileID: 2284073893715237952}
+  playerCombat: {fileID: 9111364626281549343}
+  interactClick: {fileID: 2536168543224169926, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  npcLayerMask:
+    serializedVersion: 2
+    m_Bits: 512
+  interactionDistance: 1.75

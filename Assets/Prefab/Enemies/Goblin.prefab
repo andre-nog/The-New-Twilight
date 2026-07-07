@@ -162,8 +162,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 812654909
-  m_SortingLayer: -2
+  m_SortingLayerID: -424325989
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -4230181108591323607, guid: 8fb623220d783e1488353303d9d3dfac, type: 3}
@@ -296,9 +296,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cacfca740aa0479abb4ec78ce355fc89, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStats
-  archetype: {fileID: 11400000, guid: a82c41dc190d433dbefa03a194cc044f, type: 2}
+  archetype: {fileID: 11400000, guid: 1be2df8f95de40af8c9e48b15c61b326, type: 2}
 --- !u!114 &5469370269755976784
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -309,7 +309,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c4f38dff3b4548146b5b18d2953b250b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_Health
   currentHealth: 200
   healthSlider: {fileID: 4421677304385359570}
