@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class InventoryManager : MonoBehaviour, ICancelable
 {
@@ -14,7 +15,24 @@ public class InventoryManager : MonoBehaviour, ICancelable
     [SerializeField]
     private GameObject worldItemPrefab;
 
+    // Referências usadas só pelo "modo loja" (ver EnterShopMode/ExitShopMode) —
+    // esconder o painel de equipamento e redimensionar a Window Panel pra
+    // caber só a grade de itens, deixando espaço pra ShopWindow ao lado.
+    [SerializeField]
+    private GameObject equipmentPanel;
+
+    [SerializeField]
+    private RectTransform windowPanel;
+
+    [SerializeField]
+    private RectTransform itemPanelRect;
+
     private bool menuActivated;
+    private Vector2 cachedWindowSize;
+    private Vector2 cachedWindowPosition;
+
+    public RectTransform WindowPanel => windowPanel;
+    public bool IsShopMode { get; private set; }
 
     private void Awake()
     {
@@ -73,11 +91,102 @@ public class InventoryManager : MonoBehaviour, ICancelable
     }
     public void CloseInventory()
     {
+        // Em modo loja, só ShopWindow.Close() (via InventoryWindowButton ou
+        // ESC/CancelManager) pode fechar o par loja+inventário — a tecla de
+        // atalho de abrir/fechar o inventário sozinha ficaria de fora dessa
+        // decisão e deixaria a loja desalinhada se fechasse só a metade.
+        if (IsShopMode)
+            return;
+
         menuActivated = false;
 
         inventoryCanvas.alpha = 0;
         inventoryCanvas.interactable = false;
         inventoryCanvas.blocksRaycasts = false;
+    }
+
+    // Esconde o painel de equipamento e encolhe a Window Panel pra caber só a
+    // grade de itens — o HorizontalLayoutGroup já ignora filhos inativos ao
+    // posicionar os outros (o Item Panel desliza pra esquerda sozinho), mas o
+    // tamanho da própria Window Panel não é controlado por ninguém e precisa
+    // ser ajustado aqui.
+    public void EnterShopMode()
+    {
+        if (IsShopMode)
+            return;
+
+        IsShopMode = true;
+        cachedWindowSize = windowPanel.sizeDelta;
+        cachedWindowPosition = windowPanel.anchoredPosition;
+
+        DeselectAllSlots();
+        equipmentPanel.SetActive(false);
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(windowPanel);
+
+        HorizontalLayoutGroup layout = windowPanel.GetComponent<HorizontalLayoutGroup>();
+        float newWidth = layout.padding.left + layout.padding.right + itemPanelRect.rect.width;
+        windowPanel.sizeDelta = new Vector2(newWidth, windowPanel.sizeDelta.y);
+
+        foreach (ItemSlot slot in itemSlot)
+            slot.RefreshShopModeVisual(true);
+    }
+
+    public void ExitShopMode()
+    {
+        if (!IsShopMode)
+            return;
+
+        IsShopMode = false;
+        equipmentPanel.SetActive(true);
+        windowPanel.sizeDelta = cachedWindowSize;
+        windowPanel.anchoredPosition = cachedWindowPosition;
+
+        DeselectAllSlots();
+
+        foreach (ItemSlot slot in itemSlot)
+            slot.RefreshShopModeVisual(false);
+    }
+
+    // Quanto o jogador possui deste item somando todos os slots — usado pra
+    // pré-preencher a quantidade de venda e validar antes de remover.
+    public int GetQuantity(ItemSO item)
+    {
+        int total = 0;
+
+        foreach (ItemSlot slot in itemSlot)
+        {
+            if (slot.item == item)
+                total += slot.quantity;
+        }
+
+        return total;
+    }
+
+    // Remove quantity unidades de item, varrendo quantos slots forem
+    // necessários. Retorna false (sem mutar nada) se o jogador não tiver o
+    // suficiente — mesma atomicidade de CanFit (valida tudo antes de mover).
+    public bool RemoveItem(ItemSO item, int quantity)
+    {
+        if (item == null || quantity <= 0)
+            return true;
+
+        if (GetQuantity(item) < quantity)
+            return false;
+
+        int remaining = quantity;
+
+        foreach (ItemSlot slot in itemSlot)
+        {
+            if (slot.item != item || remaining <= 0)
+                continue;
+
+            int fromThisSlot = Mathf.Min(remaining, slot.quantity);
+            slot.ReduceQuantity(fromThisSlot);
+            remaining -= fromThisSlot;
+        }
+
+        return true;
     }
 
     public int AddItem(ItemSO item, int quantity)
@@ -117,6 +226,26 @@ public class InventoryManager : MonoBehaviour, ICancelable
     public void UseItem(ItemSO item)
     {
         item.UseItem();
+    }
+
+    // Pré-checagem de espaço sem mutar nada — usada pela loja pra só gastar ouro
+    // depois de confirmar que o item cabe (em vez de tentar-e-reverter).
+    public bool CanFit(ItemSO item, int quantity)
+    {
+        if (item == null || quantity <= 0)
+            return true;
+
+        int remaining = quantity;
+
+        foreach (ItemSlot slot in itemSlot)
+        {
+            remaining -= slot.RemainingCapacity(item);
+
+            if (remaining <= 0)
+                return true;
+        }
+
+        return false;
     }
     public void DeselectAllSlots()
     {

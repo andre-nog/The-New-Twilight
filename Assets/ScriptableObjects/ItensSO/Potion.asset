@@ -17,7 +17,9 @@ MonoBehaviour:
   description: 
   modifiers:
   - stat: 0
-    amount: 3
+    amount: 50
   itemType: 0
   stackable: 1
+  rarity: 0
+  value: 10
   id: b7fea8b2a5a5e2048b3060f9314bf697

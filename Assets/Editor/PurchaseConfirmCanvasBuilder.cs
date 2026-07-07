@@ -3,33 +3,31 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Espelha TooltipCanvasBuilder/SkillBookCanvasBuilder: idempotente (destroy-by-name
-// + recreate), painel com VerticalLayoutGroup + ContentSizeFitter vertical (largura
-// fixa, altura acompanha o conteúdo), mesma paleta/Outline usados em todo o resto
-// da HUD. Um único painel com 3 modos (Accept/InProgress/Complete) — QuestWindow
-// troca quais botões ficam ativos, o layout é o mesmo.
-public static class QuestWindowCanvasBuilder
+// Espelha QuestWindowCanvasBuilder — mesma paleta/Outline/fonte. sortingOrder
+// maior que a Shop Window Canvas (200 > 150) pra desenhar por cima dela.
+public static class PurchaseConfirmCanvasBuilder
 {
-    private const string CanvasName = "Quest Window Canvas";
-    private const float PanelWidth = 420f;
-    private const int SortingOrder = 150;
+    private const string CanvasName = "Purchase Confirm Canvas";
+    private const float PanelWidth = 320f;
+    private const int SortingOrder = 200;
 
-    private static readonly Color PanelBackground = new(0.04f, 0.05f, 0.07f, 0.9f);
+    private static readonly Color PanelBackground = new(0.04f, 0.05f, 0.07f, 0.92f);
     private static readonly Color OutlineColor = new(0.55f, 0.6f, 0.7f, 0.9f);
     private static readonly Vector2 OutlineDistance = new(2f, -2f);
     private static readonly Color GoldAccent = new(1f, 0.86f, 0.35f, 1f);
     private static readonly Color ButtonColor = new(0.12f, 0.14f, 0.18f, 0.95f);
+    private static readonly Color WarningColor = new(0.85f, 0.25f, 0.25f, 1f);
 
     private static Sprite runtimeSprite;
     private static TMP_FontAsset bangersFont;
 
-    [MenuItem("Tools/Quests/Build Quest Window Canvas")]
+    [MenuItem("Tools/Shop/Build Purchase Confirm Canvas")]
     private static void Build()
     {
         DestroyIfExists(CanvasName);
 
         GameObject canvasObject = new(CanvasName);
-        Undo.RegisterCreatedObjectUndo(canvasObject, "Create Quest Window Canvas");
+        Undo.RegisterCreatedObjectUndo(canvasObject, "Create Purchase Confirm Canvas");
 
         Canvas canvas = canvasObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -44,7 +42,7 @@ public static class QuestWindowCanvasBuilder
 
         CanvasGroup canvasGroup = canvasObject.AddComponent<CanvasGroup>();
 
-        RectTransform panel = CreateUIObject("Quest Panel", canvasObject.transform);
+        RectTransform panel = CreateUIObject("Confirm Panel", canvasObject.transform);
         panel.anchorMin = new Vector2(0.5f, 0.5f);
         panel.anchorMax = new Vector2(0.5f, 0.5f);
         panel.pivot = new Vector2(0.5f, 0.5f);
@@ -69,22 +67,32 @@ public static class QuestWindowCanvasBuilder
         VerticalLayoutGroup layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(16, 16, 16, 16);
         layout.spacing = 8f;
-        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childAlignment = TextAnchor.UpperCenter;
         layout.childControlWidth = true;
         layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
 
-        TMP_Text title = CreateWrappingText("Title", panel, string.Empty, 25f);
-        title.fontStyle = FontStyles.Bold;
-        title.color = GoldAccent;
+        Image icon = CreateImage("Icon", panel, Color.white);
+        LayoutElement iconLayout = icon.gameObject.AddComponent<LayoutElement>();
+        iconLayout.preferredWidth = 64f;
+        iconLayout.preferredHeight = 64f;
+        icon.preserveAspect = true;
+        icon.enabled = false;
 
-        TMP_Text description = CreateWrappingText("Description", panel, string.Empty, 17f);
+        TMP_Text itemName = CreateText("Item Name", panel, string.Empty, 21f, TextAlignmentOptions.Center);
+        itemName.fontStyle = FontStyles.Bold;
+        itemName.color = GoldAccent;
 
-        TMP_Text objective = CreateWrappingText("Objective", panel, string.Empty, 17f);
+        TMP_Text unitPrice = CreateText("Unit Price", panel, string.Empty, 15f, TextAlignmentOptions.Center);
 
-        TMP_Text reward = CreateWrappingText("Reward", panel, string.Empty, 17f);
-        reward.color = GoldAccent;
+        TMP_Text totalPrice = CreateText("Total Price", panel, "0", 19f, TextAlignmentOptions.Center);
+
+        GameObject quantityGroup = BuildQuantityRow(panel, out TMP_Text quantityText);
+
+        TMP_Text warning = CreateText("Warning", panel, string.Empty, 15f, TextAlignmentOptions.Center);
+        warning.color = WarningColor;
+        warning.gameObject.SetActive(false);
 
         RectTransform footer = CreateUIObject("Footer", panel);
         LayoutElement footerLayout = footer.gameObject.AddComponent<LayoutElement>();
@@ -92,24 +100,73 @@ public static class QuestWindowCanvasBuilder
 
         HorizontalLayoutGroup footerGroup = footer.gameObject.AddComponent<HorizontalLayoutGroup>();
         footerGroup.spacing = 8f;
-        footerGroup.childAlignment = TextAnchor.MiddleLeft;
+        footerGroup.childAlignment = TextAnchor.MiddleCenter;
         footerGroup.childControlWidth = true;
         footerGroup.childControlHeight = true;
         footerGroup.childForceExpandWidth = true;
         footerGroup.childForceExpandHeight = true;
 
-        GameObject acceptButton = BuildFooterButton(footer, "Accept", QuestWindowButton.Kind.Accept);
-        GameObject confirmButton = BuildFooterButton(footer, "Confirm", QuestWindowButton.Kind.Confirm);
+        CanvasGroup okGroup = BuildFooterButton(footer, "OK", PurchaseConfirmButton.Kind.Ok);
+        BuildFooterButton(footer, "Cancel", PurchaseConfirmButton.Kind.Cancel);
 
-        GameObject cancelButton = BuildCloseButton(panel);
-
-        QuestWindow questWindow = canvasObject.AddComponent<QuestWindow>();
-        questWindow.Configure(canvasGroup, title, description, objective, reward, acceptButton, confirmButton, cancelButton);
+        PurchaseConfirmWindow confirmWindow = canvasObject.AddComponent<PurchaseConfirmWindow>();
+        confirmWindow.Configure(canvasGroup, icon, itemName, unitPrice, totalPrice, quantityGroup, quantityText, okGroup, warning);
 
         Selection.activeGameObject = canvasObject;
     }
 
-    private static GameObject BuildFooterButton(Transform parent, string label, QuestWindowButton.Kind kind)
+    private static GameObject BuildQuantityRow(Transform parent, out TMP_Text quantityText)
+    {
+        RectTransform row = CreateUIObject("Quantity Group", parent);
+        LayoutElement rowLayout = row.gameObject.AddComponent<LayoutElement>();
+        rowLayout.preferredHeight = 32f;
+
+        HorizontalLayoutGroup rowGroup = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+        rowGroup.spacing = 8f;
+        rowGroup.childAlignment = TextAnchor.MiddleCenter;
+        rowGroup.childControlWidth = false;
+        rowGroup.childControlHeight = true;
+        rowGroup.childForceExpandWidth = false;
+        rowGroup.childForceExpandHeight = true;
+
+        BuildSmallButton(row, "-", PurchaseConfirmButton.Kind.Decrement);
+
+        RectTransform quantityRect = CreateUIObject("Quantity", row);
+        LayoutElement quantityLayout = quantityRect.gameObject.AddComponent<LayoutElement>();
+        quantityLayout.preferredWidth = 48f;
+        quantityText = CreateText("Value", quantityRect, "1", 19f, TextAlignmentOptions.Center);
+        SetStretch(quantityText.rectTransform, 0f);
+
+        BuildSmallButton(row, "+", PurchaseConfirmButton.Kind.Increment);
+
+        return row.gameObject;
+    }
+
+    private static void BuildSmallButton(Transform parent, string label, PurchaseConfirmButton.Kind kind)
+    {
+        RectTransform rect = CreateUIObject($"{label} Button", parent);
+        LayoutElement layoutElement = rect.gameObject.AddComponent<LayoutElement>();
+        layoutElement.preferredWidth = 32f;
+        layoutElement.preferredHeight = 32f;
+
+        Image background = rect.gameObject.AddComponent<Image>();
+        background.sprite = GetRuntimeSprite();
+        background.color = ButtonColor;
+        background.raycastTarget = true;
+
+        Outline outline = rect.gameObject.AddComponent<Outline>();
+        outline.effectColor = OutlineColor;
+        outline.effectDistance = OutlineDistance;
+
+        TMP_Text text = CreateText("Label", rect, label, 18f, TextAlignmentOptions.Center);
+        SetStretch(text.rectTransform, 0f);
+        text.fontStyle = FontStyles.Bold;
+
+        PurchaseConfirmButton button = rect.gameObject.AddComponent<PurchaseConfirmButton>();
+        button.Configure(kind);
+    }
+
+    private static CanvasGroup BuildFooterButton(Transform parent, string label, PurchaseConfirmButton.Kind kind)
     {
         RectTransform rect = CreateUIObject($"{label} Button", parent);
 
@@ -126,46 +183,10 @@ public static class QuestWindowCanvasBuilder
         SetStretch(text.rectTransform, 0f);
         text.fontStyle = FontStyles.Bold;
 
-        QuestWindowButton button = rect.gameObject.AddComponent<QuestWindowButton>();
+        PurchaseConfirmButton button = rect.gameObject.AddComponent<PurchaseConfirmButton>();
         button.Configure(kind);
 
-        return rect.gameObject;
-    }
-
-    // "X" no canto superior direito do painel — separado do rodapé pra ficar
-    // visível nos 3 modos (Accept/InProgress/Complete).
-    private static GameObject BuildCloseButton(Transform panelParent)
-    {
-        RectTransform rect = CreateUIObject("Close Button", panelParent);
-        rect.anchorMin = new Vector2(1f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-6f, -6f);
-        rect.sizeDelta = new Vector2(22f, 22f);
-
-        // Painel é um VerticalLayoutGroup — sem isso, o layout group ignora o
-        // anchor/anchoredPosition manual acima e empilha o botão como mais uma
-        // linha (ficava aparecendo embaixo do Accept, em vez de flutuar no canto).
-        LayoutElement layoutElement = rect.gameObject.AddComponent<LayoutElement>();
-        layoutElement.ignoreLayout = true;
-
-        Image background = rect.gameObject.AddComponent<Image>();
-        background.sprite = GetRuntimeSprite();
-        background.color = ButtonColor;
-        background.raycastTarget = true;
-
-        Outline outline = rect.gameObject.AddComponent<Outline>();
-        outline.effectColor = OutlineColor;
-        outline.effectDistance = OutlineDistance;
-
-        TMP_Text text = CreateText("Label", rect, "X", 16f, TextAlignmentOptions.Center);
-        SetStretch(text.rectTransform, 0f);
-        text.fontStyle = FontStyles.Bold;
-
-        QuestWindowButton button = rect.gameObject.AddComponent<QuestWindowButton>();
-        button.Configure(QuestWindowButton.Kind.Cancel);
-
-        return rect.gameObject;
+        return rect.gameObject.AddComponent<CanvasGroup>();
     }
 
     private static void DestroyIfExists(string objectName)
@@ -183,6 +204,15 @@ public static class QuestWindowCanvasBuilder
         rectTransform.SetParent(parent, false);
         rectTransform.localScale = Vector3.one;
         return rectTransform;
+    }
+
+    private static Image CreateImage(string objectName, Transform parent, Color color)
+    {
+        RectTransform rectTransform = CreateUIObject(objectName, parent);
+        Image image = rectTransform.gameObject.AddComponent<Image>();
+        image.color = color;
+        image.raycastTarget = false;
+        return image;
     }
 
     private static TMP_Text CreateText(
@@ -217,16 +247,6 @@ public static class QuestWindowCanvasBuilder
         return bangersFont;
     }
 
-    // Título/descrição/objetivo/recompensa podem ser mais longos que um slot de
-    // skill — variante que quebra linha em vez de truncar.
-    private static TMP_Text CreateWrappingText(string objectName, Transform parent, string value, float fontSize)
-    {
-        TMP_Text text = CreateText(objectName, parent, value, fontSize, TextAlignmentOptions.TopLeft);
-        text.overflowMode = TextOverflowModes.Overflow;
-        text.textWrappingMode = TextWrappingModes.Normal;
-        return text;
-    }
-
     private static void SetStretch(RectTransform rectTransform, float margin)
     {
         rectTransform.anchorMin = Vector2.zero;
@@ -241,7 +261,7 @@ public static class QuestWindowCanvasBuilder
             return runtimeSprite;
 
         Texture2D texture = new(1, 1, TextureFormat.RGBA32, false);
-        texture.name = "Quest Window Runtime Texture";
+        texture.name = "Purchase Confirm Runtime Texture";
         texture.SetPixel(0, 0, Color.white);
         texture.Apply();
 
@@ -250,7 +270,7 @@ public static class QuestWindowCanvasBuilder
             new Rect(0f, 0f, 1f, 1f),
             new Vector2(0.5f, 0.5f),
             1f);
-        runtimeSprite.name = "Quest Window Runtime Sprite";
+        runtimeSprite.name = "Purchase Confirm Runtime Sprite";
         return runtimeSprite;
     }
 }

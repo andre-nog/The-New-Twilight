@@ -12,6 +12,7 @@ public class SaveData
     public List<ItemStackSave> inventory = new();
     public List<EquippedSave> equipment = new();
     public List<QuestSave> quests = new();
+    public int gold;
 }
 
 [Serializable]

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class PlayerTargeting : MonoBehaviour, ICancelable
@@ -127,6 +128,12 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
     private GameObject FindEnemyUnderMouse()
     {
         if (Mouse.current == null || Camera.main == null)
+            return null;
+
+        // Mesma correção de PlayerInteraction.FindNpcUnderMouse — sem isso, um
+        // clique/hover em cima de uma janela de UI ainda acertava o inimigo no
+        // mundo por baixo dela.
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return null;
 
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(

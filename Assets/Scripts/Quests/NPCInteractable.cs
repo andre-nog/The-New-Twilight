@@ -2,10 +2,13 @@ using UnityEngine;
 
 // Um único quest por NPC em v1 — um giver com múltiplos quests exigiria um
 // QuestSO[] + lógica de escolha, fora do escopo atual.
-public class NPCInteractable : MonoBehaviour
+public class NPCInteractable : MonoBehaviour, IInteractable
 {
     [SerializeField] private string npcName = "Villager";
     [SerializeField] private QuestSO quest;
+
+    // Sem cursor próprio — usa o fallback padrão (orb dourado) do PlayerInteraction.
+    public Texture2D CursorTexture => null;
 
     [Tooltip("Falas mostradas quando não há quest disponível/pronta (NotStarted, TurnedIn, ou sem quest atribuída). Uma é sorteada por interação.")]
     [SerializeField] private string[] idleDialogue =

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 // Espelha Player_Combat.MoveToTargetAndAttack: sem NavMeshAgent, sem callback de
@@ -19,12 +20,12 @@ public class PlayerInteraction : MonoBehaviour
 
     [SerializeField] private Vector2 cursorHotspot = new(10f, 10f);
 
-    private NPCInteractable pendingTarget;
+    private IInteractable pendingTarget;
     private bool movingToInteract;
-    private NPCInteractable hoveredTarget;
+    private IInteractable hoveredTarget;
     private SpriteRenderer hoveredRenderer;
     private Color hoveredOriginalColor;
-    private NPCInteractable selectedNpc;
+    private IInteractable selectedNpc;
 
     private static Texture2D generatedCursor;
     private static readonly Color CursorColor = new(1f, 0.86f, 0.35f, 1f);
@@ -69,7 +70,7 @@ public class PlayerInteraction : MonoBehaviour
 
     private void UpdateHover()
     {
-        NPCInteractable target = FindNpcUnderMouse();
+        IInteractable target = FindNpcUnderMouse();
 
         if (target == hoveredTarget)
             return;
@@ -82,7 +83,7 @@ public class PlayerInteraction : MonoBehaviour
 
         if (hoveredTarget != null)
         {
-            hoveredRenderer = hoveredTarget.GetComponent<SpriteRenderer>();
+            hoveredRenderer = ((Component)hoveredTarget).GetComponent<SpriteRenderer>();
 
             if (hoveredRenderer != null)
             {
@@ -119,7 +120,7 @@ public class PlayerInteraction : MonoBehaviour
 
     private void CheckNpcClick()
     {
-        NPCInteractable interactable = FindNpcUnderMouse();
+        IInteractable interactable = FindNpcUnderMouse();
 
         if (interactable != null)
         {
@@ -128,20 +129,21 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
-    private void SelectNpc(NPCInteractable target)
+    private void SelectNpc(IInteractable target)
     {
         if (target == selectedNpc)
             return;
 
         if (selectedNpc != null)
-            selectedNpc.GetComponent<SelectionCircle>()?.SetVisible(false, SelectionColor);
+            ((Component)selectedNpc).GetComponent<SelectionCircle>()?.SetVisible(false, SelectionColor);
 
         selectedNpc = target;
 
-        SelectionCircle circle = selectedNpc.GetComponent<SelectionCircle>();
+        GameObject targetObject = ((Component)selectedNpc).gameObject;
+        SelectionCircle circle = targetObject.GetComponent<SelectionCircle>();
 
         if (circle == null)
-            circle = selectedNpc.gameObject.AddComponent<SelectionCircle>();
+            circle = targetObject.AddComponent<SelectionCircle>();
 
         circle.SetVisible(true, SelectionColor);
     }
@@ -149,9 +151,16 @@ public class PlayerInteraction : MonoBehaviour
     // Mesmo formato de PlayerTargeting.CheckEnemyClick (OverlapPointAll + maior
     // sortingOrder), só que filtrando pela layer/tag "NPC" em vez de "Enemy" —
     // reaproveitado tanto pelo clique quanto pelo hover a cada frame.
-    private NPCInteractable FindNpcUnderMouse()
+    private IInteractable FindNpcUnderMouse()
     {
         if (Mouse.current == null || Camera.main == null)
+            return null;
+
+        // Sem isso, um clique/hover em cima de uma janela de UI (loja,
+        // inventário, etc.) ainda acertava o NPC no mundo por baixo dela —
+        // Physics2D.OverlapPointAll não sabe nada sobre o que está desenhado
+        // por cima na tela.
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return null;
 
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
@@ -183,16 +192,16 @@ public class PlayerInteraction : MonoBehaviour
             }
         }
 
-        return bestTarget != null ? bestTarget.GetComponent<NPCInteractable>() : null;
+        return bestTarget != null ? bestTarget.GetComponent<IInteractable>() : null;
     }
 
-    public void BeginInteract(NPCInteractable target)
+    public void BeginInteract(IInteractable target)
     {
         playerCombat.CancelMoveToAttack();
 
         pendingTarget = target;
 
-        float distance = Vector2.Distance(transform.position, target.transform.position);
+        float distance = Vector2.Distance(transform.position, ((Component)target).transform.position);
 
         if (distance <= interactionDistance)
         {
@@ -219,7 +228,8 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        float distance = Vector2.Distance(transform.position, pendingTarget.transform.position);
+        Vector3 targetPosition = ((Component)pendingTarget).transform.position;
+        float distance = Vector2.Distance(transform.position, targetPosition);
 
         if (distance <= interactionDistance)
         {
@@ -227,12 +237,12 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        playerMovement.MoveTo(pendingTarget.transform.position);
+        playerMovement.MoveTo(targetPosition);
     }
 
     private void Arrive()
     {
-        NPCInteractable target = pendingTarget;
+        IInteractable target = pendingTarget;
 
         movingToInteract = false;
         pendingTarget = null;
@@ -243,6 +253,9 @@ public class PlayerInteraction : MonoBehaviour
 
     private Texture2D GetCursorTexture()
     {
+        if (hoveredTarget != null && hoveredTarget.CursorTexture != null)
+            return hoveredTarget.CursorTexture;
+
         if (customCursor != null)
             return customCursor;
 

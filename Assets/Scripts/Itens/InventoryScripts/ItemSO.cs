@@ -24,6 +24,14 @@ public class ItemSO : ScriptableObject
     [Header("Rarity")]
     public ItemRarity rarity;
 
+    [Header("Shop")]
+    public int value = 0;
+
+    // Itens de missão nunca são vendáveis — nenhum outro itemType é bloqueado
+    // hoje. Se algum dia precisar de exceção fora do itemType, trocar isso por
+    // um campo sellable dedicado.
+    public bool IsSellable => itemType != ItemType.Quest;
+
     // Id estável para save/load — o GUID do próprio asset (não muda ao renomear ou
     // mover o arquivo). Nunca editar à mão; preenchido automaticamente no Editor.
     [SerializeField, HideInInspector] private string id;

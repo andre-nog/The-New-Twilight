@@ -197,6 +197,20 @@ public class ItemSlot : MonoBehaviour,
         ReduceQuantity(1);
     }
 
+    // Quanto deste item ainda cabe neste slot, sem mutar nada — usado pra
+    // pré-checar espaço antes de gastar ouro na loja (InventoryManager.CanFit),
+    // já que AddItem só sinaliza falta de espaço depois de já ter mutado o slot.
+    public int RemainingCapacity(ItemSO forItem)
+    {
+        if (item == null)
+            return forItem.stackable ? maxNumberOfItems : 1;
+
+        if (item != forItem || !forItem.stackable)
+            return 0;
+
+        return Mathf.Max(0, maxNumberOfItems - quantity);
+    }
+
     // Reduz a quantidade em `amount` unidades, limpando o slot se chegar a zero ou
     // menos. Usado pelo merge de stacks no drag-and-drop, onde a quantidade a remover
     // da origem é a diferença entre o que foi movido e a sobra que não coube no destino.
@@ -229,6 +243,15 @@ public class ItemSlot : MonoBehaviour,
     {
         if (item == null)
             return;
+
+        // Modo loja: clique único vende direto, sem passar pelo fluxo normal
+        // de seleção + segundo clique (equipar/usar fica intacto quando a
+        // loja está fechada).
+        if (inventoryManager != null && inventoryManager.IsShopMode)
+        {
+            HandleShopModeClick();
+            return;
+        }
 
         if (thisItemSelected)
         {
@@ -285,6 +308,25 @@ public class ItemSlot : MonoBehaviour,
             selectedShader.SetActive(true);
 
         thisItemSelected = true;
+    }
+
+    private void HandleShopModeClick()
+    {
+        // Item de missão: já fica esmaecido (ver RefreshShopModeVisual), o
+        // clique simplesmente não faz nada.
+        if (!item.IsSellable || ShopWindow.Instance == null || PurchaseConfirmWindow.Instance == null)
+            return;
+
+        int sellPrice = ShopWindow.Instance.GetSellPrice(item);
+        PurchaseConfirmWindow.Instance.Open(item, sellPrice, PurchaseConfirmWindow.TransactionType.Sell);
+    }
+
+    // Esmaece o ícone de itens não-vendáveis enquanto a loja está aberta —
+    // chamado pelo InventoryManager ao entrar/sair do modo loja.
+    public void RefreshShopModeVisual(bool shopModeActive)
+    {
+        bool dim = shopModeActive && item != null && !item.IsSellable;
+        itemImage.color = dim ? new Color(1f, 1f, 1f, 0.35f) : Color.white;
     }
 
     public void SetItem(ItemSO newItem)
