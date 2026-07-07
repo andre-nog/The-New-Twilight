@@ -43,7 +43,7 @@ TagManager:
   - name: Ground
     uniqueID: 4138970915
     locked: 0
-  - name: Player
+  - name: Character Effects
     uniqueID: 4183864605
     locked: 0
   - name: Enemy

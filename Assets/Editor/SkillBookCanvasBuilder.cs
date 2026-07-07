@@ -264,7 +264,7 @@ public static class SkillBookCanvasBuilder
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
         rect.anchoredPosition = new Vector2(-2f, -2f);
-        rect.sizeDelta = new Vector2(26f, 26f);
+        rect.sizeDelta = new Vector2(22f, 22f);
 
         Image image = rect.gameObject.AddComponent<Image>();
         image.sprite = GetRuntimeSprite();
@@ -274,14 +274,9 @@ public static class SkillBookCanvasBuilder
         Button button = rect.gameObject.AddComponent<Button>();
         button.targetGraphic = image;
 
-        TMP_Text plus = CreateText("Plus Text", rect, "+", 30f, TextAlignmentOptions.Center);
+        TMP_Text plus = CreateText("Plus Text", rect, "+", 19f, TextAlignmentOptions.Center);
         SetStretch(plus.rectTransform, 0f);
         plus.fontStyle = FontStyles.Bold;
-
-        // Truncate (padrão do CreateText) corta o glifo no limite do box 26x26, que
-        // travava o "+" em ~19. Overflow deixa desenhar além dos bounds, centralizado,
-        // então a fonte pode subir sem clip.
-        plus.overflowMode = TextOverflowModes.Overflow;
 
         // Fica na fonte padrão do TMP por pedido, não a Bangers SDF que o resto
         // do Skill Book usa — CreateText já aplicou Bangers, sobrescreve de volta.

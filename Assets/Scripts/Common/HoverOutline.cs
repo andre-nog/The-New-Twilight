@@ -6,10 +6,22 @@ using UnityEngine;
 // contorno preserva o tamanho real do personagem. Adicionado dinamicamente em
 // runtime pelo hover (PlayerInteraction/PlayerTargeting), não precisa existir
 // no prefab/cena.
+//
+// O anel fica numa Sorting Layer PRÓPRIA ("Character Effects", posicionada antes
+// de "Default" no Project Settings), em vez de espelhar a layer/sortingOrder do
+// sprite original. Sorting Layer sempre tem prioridade sobre sortingOrder — então
+// "atrás dos personagens" fica garantido estruturalmente, não por sincronizar
+// número certo a cada frame. Tentativa anterior (copiar sortingOrder do original
+// e recalcular todo frame) ainda perdia a corrida ocasionalmente contra o
+// SpriteYSorter (que também mexe em sortingOrder todo LateUpdate baseado em Y) —
+// e como o "anel" é uma cópia INTEIRA e sólida do sprite (não um contorno fino
+// desenhado), qualquer frame fora de ordem já aparecia como personagem inteiro
+// vermelho, não um glitch sutil.
 public class HoverOutline : MonoBehaviour
 {
     private const float PixelThickness = 0.045f;
     private const float Diagonal = 0.7071f;
+    private const string EffectsSortingLayerName = "Character Effects";
 
     private static readonly Vector2[] Offsets =
     {
@@ -31,8 +43,9 @@ public class HoverOutline : MonoBehaviour
         if (!visible || outlineRenderers == null || sourceRenderer == null)
             return;
 
-        // Acompanha o frame de animação atual do sprite original — sem isso o
-        // contorno ficaria travado no frame de quando o hover começou.
+        // Só precisa acompanhar o sprite (frame de animação) — layer/sortingOrder
+        // do anel são fixos desde EnsureBuilt(), a Sorting Layer dedicada já
+        // garante "atrás" sozinha.
         foreach (SpriteRenderer sr in outlineRenderers)
             sr.sprite = sourceRenderer.sprite;
     }
@@ -65,6 +78,8 @@ public class HoverOutline : MonoBehaviour
         if (outlineRenderers != null)
             return;
 
+        int effectsLayerId = SortingLayer.NameToID(EffectsSortingLayerName);
+
         outlineRenderers = new SpriteRenderer[Offsets.Length];
 
         for (int i = 0; i < Offsets.Length; i++)
@@ -76,8 +91,8 @@ public class HoverOutline : MonoBehaviour
 
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sourceRenderer.sprite;
-            sr.sortingLayerID = sourceRenderer.sortingLayerID;
-            sr.sortingOrder = sourceRenderer.sortingOrder - 1;
+            sr.sortingLayerID = effectsLayerId;
+            sr.sortingOrder = 0;
             sr.gameObject.SetActive(false);
 
             outlineRenderers[i] = sr;

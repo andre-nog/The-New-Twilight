@@ -16,9 +16,9 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
 
     public GameObject currentTarget;
 
-    private Color originalColor;
     private GameObject hoveredEnemy;
     private static readonly Color HoverOutlineColor = Color.red;
+    private static readonly Color SelectionColor = Color.red;
     private static Texture2D generatedCursor;
 
     private void OnEnable()
@@ -171,13 +171,12 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
 
         currentTarget = target;
 
-        SpriteRenderer sr = currentTarget.GetComponent<SpriteRenderer>();
+        SelectionCircle circle = currentTarget.GetComponent<SelectionCircle>();
 
-        if (sr != null)
-        {
-            originalColor = sr.color;
-            sr.color = Color.red;
-        }
+        if (circle == null)
+            circle = currentTarget.AddComponent<SelectionCircle>();
+
+        circle.SetVisible(true, SelectionColor);
     }
 
     private void SelectNextEnemy()
@@ -295,10 +294,7 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
         if (currentTarget == null)
             return;
 
-        SpriteRenderer sr = currentTarget.GetComponent<SpriteRenderer>();
-
-        if (sr != null)
-            sr.color = originalColor;
+        currentTarget.GetComponent<SelectionCircle>()?.SetVisible(false, SelectionColor);
 
         currentTarget = null;
     }

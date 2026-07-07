@@ -24,9 +24,11 @@ public class PlayerInteraction : MonoBehaviour
     private NPCInteractable hoveredTarget;
     private SpriteRenderer hoveredRenderer;
     private Color hoveredOriginalColor;
+    private NPCInteractable selectedNpc;
 
     private static Texture2D generatedCursor;
     private static readonly Color CursorColor = new(1f, 0.86f, 0.35f, 1f);
+    private static readonly Color SelectionColor = Color.white;
 
     // Sprite não fica mais "maior" no hover (o Outline escalado parecia glitchado)
     // — em vez disso clareia a cor multiplicando acima de 1, que estoura os canais
@@ -120,7 +122,28 @@ public class PlayerInteraction : MonoBehaviour
         NPCInteractable interactable = FindNpcUnderMouse();
 
         if (interactable != null)
+        {
+            SelectNpc(interactable);
             BeginInteract(interactable);
+        }
+    }
+
+    private void SelectNpc(NPCInteractable target)
+    {
+        if (target == selectedNpc)
+            return;
+
+        if (selectedNpc != null)
+            selectedNpc.GetComponent<SelectionCircle>()?.SetVisible(false, SelectionColor);
+
+        selectedNpc = target;
+
+        SelectionCircle circle = selectedNpc.GetComponent<SelectionCircle>();
+
+        if (circle == null)
+            circle = selectedNpc.gameObject.AddComponent<SelectionCircle>();
+
+        circle.SetVisible(true, SelectionColor);
     }
 
     // Mesmo formato de PlayerTargeting.CheckEnemyClick (OverlapPointAll + maior

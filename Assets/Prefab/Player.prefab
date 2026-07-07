@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 2853336494491287680}
   - component: {fileID: 6366726637633127477}
   - component: {fileID: 231425218}
+  - component: {fileID: 210490869}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -87,8 +88,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -111102691
-  m_SortingLayer: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 1448252480329919801, guid: c57fa857f0a5bd04495248c41ed789c0, type: 3}
@@ -314,3 +315,15 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 512
   interactionDistance: 1.75
+--- !u!114 &210490869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8687327442297997352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9dbebd1721f961443b2984e3460d2d69, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteYSorter
