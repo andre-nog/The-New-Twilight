@@ -14,6 +14,7 @@ public class Player_Combat : MonoBehaviour
     // currentSkill/attackTarget/damageMultiplierBonus.
     private CastContext pendingCast;
     private bool movingToAttack;
+    private int castGeneration;
     private PlayerSkillManager skillManager;
     private ResourceManager resourceManager;
 
@@ -63,6 +64,14 @@ public class Player_Combat : MonoBehaviour
 
         if (distance <= pendingCast.Skill.range)
         {
+            // Em alcance mas ainda em cooldown: segura posição (não cancela
+            // movingToAttack) e continua checando a cada frame até poder disparar.
+            if (skillManager.GetRemainingCooldown(pendingCast.Skill) > 0f)
+            {
+                playerMovement.CancelAutoMove();
+                return;
+            }
+
             CancelMoveToAttack();
             ExecuteSkill();
             return;
@@ -121,6 +130,22 @@ public class Player_Combat : MonoBehaviour
         }
 
         anim.SetTrigger(skill.animationTrigger);
+
+        int myGeneration = ++castGeneration;
+        StartCoroutine(AttackTimeoutWatchdog(myGeneration, skill.maxCastDuration));
+    }
+
+    // Failsafe for a missing/misnamed animation event: without this, a broken
+    // skill asset would soft-lock all casting (and movement) until death.
+    private System.Collections.IEnumerator AttackTimeoutWatchdog(int generation, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        if (isAttacking && generation == castGeneration)
+        {
+            FinishAttacking();
+            ReleaseMovement();
+        }
     }
 
     // Passivas vêm da classe atual (ClassDefinitionSO) — trocar de classe troca
@@ -198,6 +223,18 @@ public class Player_Combat : MonoBehaviour
             playerInteraction.CancelInteract();
             movingToAttack = true;
             playerMovement.autoMoving = true;
+            return;
+        }
+
+        // Já em alcance: se ainda em cooldown e a skill permite perseguir, entra no
+        // mesmo loop de "esperar" que MoveToTargetAndAttack usa pra quem estava fora
+        // de alcance — assim que o cooldown acabar, ela detecta e dispara sozinha.
+        if (skillManager.GetRemainingCooldown(skill) > 0f)
+        {
+            if (!skill.followTargetWhileOnCooldown)
+                return;
+
+            movingToAttack = true;
             return;
         }
 

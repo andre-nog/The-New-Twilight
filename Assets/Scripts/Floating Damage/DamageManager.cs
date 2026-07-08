@@ -26,6 +26,9 @@ public class DamageManager : MonoBehaviour
     // sem rodar Awake() de novo — mesmo padrão dos outros managers.
     private void OnEnable()
     {
+        if (Instance != null && Instance != this)
+            return;
+
         Instance = this;
     }
 

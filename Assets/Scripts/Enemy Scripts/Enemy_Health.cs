@@ -5,7 +5,10 @@ using UnityEngine.UI;
 [RequireComponent(typeof(EnemyStats))]
 public class Enemy_Health : MonoBehaviour, IDamageable
 {
-    public delegate void MonsterDefeated(int exp, string displayName);
+    // archetype (não mais displayName) — QuestManager comparava por string exata
+    // contra EnemyStats.DisplayName, frágil a rename/typo. Referência direta ao
+    // asset nunca dessincroniza.
+    public delegate void MonsterDefeated(int exp, EnemyArchetypeSO archetype);
     public static event MonsterDefeated OnMonsterDefeated;
 
     // Registro de inimigos vivos na cena — evita FindGameObjectsWithTag em quem
@@ -18,6 +21,7 @@ public class Enemy_Health : MonoBehaviour, IDamageable
 
     // maxHealth/armor/expReward saíram daqui — agora vêm do EnemyArchetypeSO via EnemyStats.
     private EnemyStats stats;
+    private bool isDead;
 
     public float Armor => stats.Armor;
     public bool IsAlive => currentHealth > 0;
@@ -76,15 +80,17 @@ public class Enemy_Health : MonoBehaviour, IDamageable
             );
         }
 
-        if (currentHealth <= 0)
+        if (currentHealth <= 0 && !isDead)
         {
-            OnMonsterDefeated?.Invoke(stats.ExpReward, stats.DisplayName);
+            isDead = true;
+            OnMonsterDefeated?.Invoke(stats.ExpReward, stats.Archetype);
             Destroy(gameObject);
         }
     }
 
     public void ResetEnemy()
     {
+        isDead = false;
         currentHealth = stats.MaxHealth;
 
         if (healthSlider != null)

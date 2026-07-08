@@ -7,12 +7,26 @@ using UnityEngine;
 [Serializable]
 public class SaveData
 {
-    public int version = 1;
+    // v2: QuestSave.state passou de int (cast direto do enum, frágil a reordenar
+    // QuestState) pra string (nome do enum). Saves v1 são migrados por
+    // SaveMigrations — ver SaveService.TryLoadFrom.
+    public int version = 2;
+
+    // Não consumido hoje (jogo é cena única) — gravado desde já pra quando dungeons
+    // existirem e o load precisar saber qual cena carregar antes de aplicar o resto.
+    public string sceneId;
+
     public PlayerSave player = new();
     public List<ItemStackSave> inventory = new();
     public List<EquippedSave> equipment = new();
     public List<QuestSave> quests = new();
     public int gold;
+
+    // Ids de WorldItem (Item.cs) já coletados — sem isso, um reload de cena
+    // recria itens autorados já pegos, duplicando-os. Ver WorldItemRegistry.
+    // Campo puramente aditivo — não precisou de bump de versão (v2 continua
+    // valendo, um save antigo sem este campo só volta com a lista vazia).
+    public List<string> collectedWorldItems = new();
 }
 
 [Serializable]
@@ -45,6 +59,23 @@ public class EquippedSave
 public class QuestSave
 {
     public string questId;
-    public int state;
+
+    // Nome do enum QuestState (não o int cast) — reordenar o enum nunca corrompe
+    // um save antigo. Ver SaveMigrations pra saves v1 (que guardavam int).
+    public string state;
+
     public int progress;
+}
+
+// DTO de transferência entre StatsManager e GameManager (não faz parte da árvore
+// JSON diretamente — GameManager copia estes campos pra dentro de PlayerSave).
+// Existe pra GameManager parar de ler currentClass/level/currentHealth/currentMana
+// direto de StatsManager, mesmo contrato GetState/ApplyState de InventoryManager/
+// EquipmentManager/QuestManager/GoldManager.
+public class StatsSave
+{
+    public string classId;
+    public int level;
+    public int currentHealth;
+    public int currentMana;
 }

@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Goblins have been raiding the area. Kill 10 of them to make the roads
     safe again.
   objectiveType: 0
-  targetId: Goblin
+  targetArchetype: {fileID: 11400000, guid: 1be2df8f95de40af8c9e48b15c61b326, type: 2}
   requiredAmount: 1
   xpReward: 200
   objectiveLabel: Kill Goblins

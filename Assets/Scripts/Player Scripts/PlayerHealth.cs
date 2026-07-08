@@ -17,6 +17,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     private PlayerMovement playerMovement;
     private Player_Combat playerCombat;
     private PlayerSkillManager skillManager;
+    private PlayerTargeting playerTargeting;
     private Collider2D playerCollider;
     private SpriteRenderer spriteRenderer;
     private Animator animator;
@@ -29,6 +30,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         playerMovement = GetComponent<PlayerMovement>();
         playerCombat = GetComponent<Player_Combat>();
         skillManager = GetComponent<PlayerSkillManager>();
+        playerTargeting = GetComponent<PlayerTargeting>();
         playerCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
@@ -124,6 +126,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         SetVisualEnabled(false);
         ZeroVelocity();
         ShowDeathOverlay();
+
+        // Sem isso, o círculo de seleção do inimigo fica aceso enquanto o player está
+        // morto — não bloqueia o respawn (a instância nova nasce com currentTarget nulo),
+        // mas é um resíduo visual enganoso: parece que o alvo continua "selecionado".
+        if (playerTargeting != null)
+            playerTargeting.ClearTarget();
 
         OnPlayerDied?.Invoke();
     }

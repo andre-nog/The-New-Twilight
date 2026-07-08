@@ -118,6 +118,9 @@ public class StatsManager : MonoBehaviour
     // fica null até a cena recarregar de verdade, derrubando quem depende dele.
     private void OnEnable()
     {
+        if (Instance != null && Instance != this)
+            return;
+
         Instance = this;
 
         // MaxHealth/AttackPower/etc. são propriedades calculadas, não seriais — um
@@ -260,6 +263,24 @@ public class StatsManager : MonoBehaviour
         currentMana = Mathf.Clamp(mana, 0, MaxMana);
 
         OnStatsChanged?.Invoke();
+    }
+
+    // Contrato de save — GameManager compõe PlayerSave a partir disto em vez de ler
+    // currentClass/level/currentHealth/currentMana direto (mesmo padrão de
+    // InventoryManager/EquipmentManager/QuestManager/GoldManager). O carregamento
+    // continua chamando SetClass/SetLevel/SetVitals diretamente (já eram métodos
+    // públicos) — a ordem entre eles e Equipment/Inventory.ApplyState importa
+    // (SetVitals precisa vir depois do equipamento recalcular MaxHealth/MaxMana
+    // com os bônus de gear), então não dá pra combinar tudo num ApplyState só.
+    public StatsSave GetState()
+    {
+        return new StatsSave
+        {
+            classId = currentClass != null ? currentClass.Id : null,
+            level = level,
+            currentHealth = currentHealth,
+            currentMana = currentMana
+        };
     }
 
     public void AddModifier(StatModifier modifier)

@@ -108,7 +108,7 @@ public class SkillBarSlot : MonoBehaviour,
 
         EnsureRefs();
 
-        if (skillManager == null || skillManager.GetSkillAt(SlotIndex) == null)
+        if (skillManager == null || skillManager.GetSkillAt(SlotIndex) == null || SkillDragController.Instance == null)
             return;
 
         SkillDragController.Instance.BeginDrag(this, icon.sprite, eventData);
@@ -116,7 +116,7 @@ public class SkillBarSlot : MonoBehaviour,
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!SkillDragController.Instance.IsDragging)
+        if (SkillDragController.Instance == null || !SkillDragController.Instance.IsDragging)
             return;
 
         SkillDragController.Instance.UpdateGhostPosition(eventData);
@@ -124,12 +124,14 @@ public class SkillBarSlot : MonoBehaviour,
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        SkillDragController.Instance.EndDrag();
+        if (SkillDragController.Instance != null)
+            SkillDragController.Instance.EndDrag();
     }
 
     public void OnDrop(PointerEventData eventData)
     {
-        SkillDragController.Instance.TryDrop(this);
+        if (SkillDragController.Instance != null)
+            SkillDragController.Instance.TryDrop(this);
     }
 
     public void OnPointerEnter(PointerEventData eventData)

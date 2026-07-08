@@ -31,6 +31,11 @@ public class InventoryManager : MonoBehaviour, ICancelable
     private Vector2 cachedWindowSize;
     private Vector2 cachedWindowPosition;
 
+    // Entradas cujo itemId não resolveu no ItemDatabaseSO (asset renomeado/deletado
+    // durante balanceamento) — nunca descartadas silenciosamente, ficam aqui até o
+    // asset voltar a existir ou o jogador ocupar o slot com outra coisa (ver GetState).
+    private readonly List<ItemStackSave> unresolvedStacks = new();
+
     public RectTransform WindowPanel => windowPanel;
     public bool IsShopMode { get; private set; }
 
@@ -369,6 +374,18 @@ public class InventoryManager : MonoBehaviour, ICancelable
             });
         }
 
+        // Reanexa entradas não resolvidas cujo slot continua livre — preserva o dado
+        // até o item ser resolvível de novo ou o jogador ocupar o slot com outra coisa
+        // (nesse caso a ação real do jogador prevalece e a entrada crua é descartada).
+        foreach (ItemStackSave unresolved in unresolvedStacks)
+        {
+            bool slotStillFree = unresolved.slotIndex < 0 || unresolved.slotIndex >= itemSlot.Length
+                || itemSlot[unresolved.slotIndex].item == null;
+
+            if (slotStillFree)
+                result.Add(unresolved);
+        }
+
         return result;
     }
 
@@ -379,18 +396,28 @@ public class InventoryManager : MonoBehaviour, ICancelable
         for (int i = 0; i < itemSlot.Length; i++)
             itemSlot[i].Clear();
 
+        unresolvedStacks.Clear();
+
         if (state == null || database == null)
             return;
 
         foreach (ItemStackSave stack in state)
         {
             if (stack.slotIndex < 0 || stack.slotIndex >= itemSlot.Length)
+            {
+                Debug.LogWarning($"InventoryManager: slotIndex {stack.slotIndex} do save fora do intervalo (item '{stack.itemId}') — preservado cru em vez de descartado.");
+                unresolvedStacks.Add(stack);
                 continue;
+            }
 
             ItemSO item = database.GetById(stack.itemId);
 
             if (item == null)
+            {
+                Debug.LogWarning($"InventoryManager: itemId '{stack.itemId}' (slot {stack.slotIndex}) não encontrado no banco de itens — preservado cru em vez de descartado.");
+                unresolvedStacks.Add(stack);
                 continue;
+            }
 
             itemSlot[stack.slotIndex].LoadItem(item, stack.quantity);
         }

@@ -125,7 +125,7 @@ public class PurchaseConfirmWindow : MonoBehaviour, ICancelable
         if (quantityText != null)
             quantityText.text = quantity.ToString();
 
-        int total = unitPrice * quantity;
+        long total = (long)unitPrice * quantity;
         totalPriceText.text = total.ToString();
 
         // Vender não trava no ouro (não há custo pro jogador) — só compra
@@ -145,10 +145,13 @@ public class PurchaseConfirmWindow : MonoBehaviour, ICancelable
 
     public void OnOkClicked()
     {
+        if (!okButtonGroup.interactable)
+            return;
+
         if (currentItem == null || GoldManager.Instance == null || InventoryManager.Instance == null)
             return;
 
-        int total = unitPrice * quantity;
+        long total = (long)unitPrice * quantity;
 
         if (transactionType == TransactionType.Buy)
         {
@@ -166,7 +169,9 @@ public class PurchaseConfirmWindow : MonoBehaviour, ICancelable
                 return;
             }
 
-            GoldManager.Instance.SpendGold(total);
+            // Safe to cast: the affordability check above already proved
+            // total <= CurrentGold <= int.MaxValue.
+            GoldManager.Instance.SpendGold((int)total);
             InventoryManager.Instance.AddItem(currentItem, quantity);
         }
         else
@@ -187,7 +192,7 @@ public class PurchaseConfirmWindow : MonoBehaviour, ICancelable
                 return;
             }
 
-            GoldManager.Instance.AddGold(total);
+            GoldManager.Instance.AddGold((int)System.Math.Min(total, int.MaxValue));
         }
 
         Close();

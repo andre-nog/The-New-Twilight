@@ -8,6 +8,10 @@ public class EquipmentManager : MonoBehaviour
     [Header("Equipment Slots")]
     [SerializeField] private EquippedSlot[] equippedSlots;
 
+    // Entradas cujo itemId não resolveu no ItemDatabaseSO — nunca descartadas
+    // silenciosamente, ficam aqui até o asset voltar a existir (ver GetState).
+    private readonly List<EquippedSave> unresolvedEquipped = new();
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -196,6 +200,8 @@ public class EquipmentManager : MonoBehaviour
                 result.Add(new EquippedSave { slotIndex = i, itemId = item.Id });
         }
 
+        result.AddRange(unresolvedEquipped);
+
         return result;
     }
 
@@ -221,6 +227,7 @@ public class EquipmentManager : MonoBehaviour
     public void ApplyState(List<EquippedSave> state, ItemDatabaseSO database)
     {
         UnequipAllSilent();
+        unresolvedEquipped.Clear();
 
         if (state == null || database == null)
             return;
@@ -229,8 +236,14 @@ public class EquipmentManager : MonoBehaviour
         {
             ItemSO item = database.GetById(saved.itemId);
 
-            if (item != null)
-                Equip(item);
+            if (item == null)
+            {
+                Debug.LogWarning($"EquipmentManager: itemId '{saved.itemId}' (slot {saved.slotIndex}) não encontrado no banco de itens — preservado cru em vez de descartado.");
+                unresolvedEquipped.Add(saved);
+                continue;
+            }
+
+            Equip(item);
         }
     }
 }

@@ -109,7 +109,7 @@ public class SkillBookSlot : MonoBehaviour,
             return;
 
         // Skills não-aprendidas não podem ir pra barra.
-        if (!IsLearned || Skill == null)
+        if (!IsLearned || Skill == null || SkillDragController.Instance == null)
             return;
 
         SkillDragController.Instance.BeginDrag(this, icon.sprite, eventData);
@@ -117,7 +117,7 @@ public class SkillBookSlot : MonoBehaviour,
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!SkillDragController.Instance.IsDragging)
+        if (SkillDragController.Instance == null || !SkillDragController.Instance.IsDragging)
             return;
 
         SkillDragController.Instance.UpdateGhostPosition(eventData);
@@ -125,7 +125,8 @@ public class SkillBookSlot : MonoBehaviour,
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        SkillDragController.Instance.EndDrag();
+        if (SkillDragController.Instance != null)
+            SkillDragController.Instance.EndDrag();
     }
 
     public void OnPointerEnter(PointerEventData eventData)

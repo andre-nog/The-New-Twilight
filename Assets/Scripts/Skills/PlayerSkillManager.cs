@@ -43,7 +43,13 @@ public class PlayerSkillManager : MonoBehaviour
     // A capacidade é slotInputs.Count (não mais limitada por quantas skills a classe
     // já tem) — slots além do kit padrão nascem vazios (skill = null), pra poder
     // receber uma skill via drag-and-drop do Livro de Skills em qualquer posição.
-    private void EnsureSlotsBuilt()
+    //
+    // Público (não só chamado do próprio Awake): GameManager.RegisterPlayer roda dentro
+    // do Awake() de PlayerHealth no MESMO GameObject recém-instanciado, e a ordem de
+    // Awake() entre componentes não é garantida pela Unity — sem chamar isto explicitamente
+    // antes de SkillBarUI.Rebind ler os slots, um respawn ocasionalmente lança NRE porque
+    // PlayerSkillManager.Awake() (que constrói slots) ainda não rodou.
+    public void EnsureSlotsBuilt()
     {
         if (slots != null)
             return;
@@ -221,7 +227,10 @@ public class PlayerSkillManager : MonoBehaviour
 
     private void TryCastOrQueue(Skill skill)
     {
-        if (skill == null || GetRemainingCooldown(skill) > 0f)
+        if (skill == null)
+            return;
+
+        if (GetRemainingCooldown(skill) > 0f && !skill.followTargetWhileOnCooldown)
             return;
 
         if (combat.isAttacking)
@@ -305,19 +314,26 @@ public class PlayerSkillManager : MonoBehaviour
         if (index < 0 || index >= slots.Length)
             return;
 
+        float carriedCooldown = 0f;
+        float carriedDuration = 0f;
+
         if (skill != null)
         {
             for (int i = 0; i < slots.Length; i++)
             {
                 if (i != index && slots[i].skill == skill)
+                {
+                    carriedCooldown = slots[i].cooldown;
+                    carriedDuration = slots[i].duration;
                     ClearSlot(i);
+                }
             }
         }
 
         slots[index].skill = skill;
         slots[index].icon = icon;
-        slots[index].cooldown = 0f;
-        slots[index].duration = 0f;
+        slots[index].cooldown = carriedCooldown;
+        slots[index].duration = carriedDuration;
     }
 
     private void ClearSlot(int index)

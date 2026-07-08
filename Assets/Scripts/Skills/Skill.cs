@@ -74,6 +74,9 @@ public abstract class Skill : ScriptableObject
     [Header("Gameplay")]
     public bool requiresTarget = true;
     public bool lockMovementDuringCast = false;
+
+    [Tooltip("Se em cooldown quando usada, o jogador se aproxima e segura posição perto do alvo até o cooldown acabar, castando automaticamente assim que possível — em vez de ignorar o input. Desmarque para skills que não devem perseguir enquanto recarregam.")]
+    public bool followTargetWhileOnCooldown = true;
     public float cooldown;
     public float range;
     public float damageMultiplier = 1f;
@@ -98,6 +101,9 @@ public abstract class Skill : ScriptableObject
 
     [Header("Animation")]
     public string animationTrigger;
+
+    [Tooltip("Failsafe: force-clears isAttacking after this many seconds if the animation event never fires (missing/misnamed event, broken animator state).")]
+    public float maxCastDuration = 3f;
 
     // Dano esperado "pré-mitigação" (sem crit, variância de dano ou Armor do alvo) —
     // mesma fórmula usada de fato em Player_Combat.DealDamage, só que sem os termos

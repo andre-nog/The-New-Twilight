@@ -22,16 +22,29 @@ public class PlayerTargeting : MonoBehaviour, ICancelable
     private static readonly Color SelectionColor = Color.red;
     private static Texture2D generatedCursor;
 
+    // selectTarget/targetNext apontam pra InputActions COMPARTILHADAS (mesmo asset,
+    // não por-instância). No respawn, Destroy(player antigo) + Instantiate(player novo)
+    // rodam no mesmo frame, mas o OnDisable do antigo só dispara no fim do frame — depois
+    // do OnEnable do novo já ter rodado. Sem essa guarda, o OnDisable adiado do antigo
+    // desabilita as actions que o novo acabou de ligar, e clique/Tab pra alvo param de
+    // funcionar até a próxima recompilação. Mesmo padrão de "sou eu o dono atual?" já
+    // usado pelos managers singleton (GameManager, CombatManager, etc.).
+    private static PlayerTargeting activeInstance;
+
     private void OnEnable()
     {
+        activeInstance = this;
         selectTarget.action.Enable();
         targetNext.action.Enable();
     }
 
     private void OnDisable()
     {
-        selectTarget.action.Disable();
-        targetNext.action.Disable();
+        if (activeInstance == this)
+        {
+            selectTarget.action.Disable();
+            targetNext.action.Disable();
+        }
 
         ClearHover();
     }

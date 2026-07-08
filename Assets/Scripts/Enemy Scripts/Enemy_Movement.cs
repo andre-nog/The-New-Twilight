@@ -462,6 +462,7 @@ public class Enemy_Movement : MonoBehaviour
         {
             player = hit.transform;
             playerHealth = hit.GetComponent<IDamageable>();
+            FaceTowardX(player.position.x - transform.position.x);
             ChangeState(EnemyState.Chasing);
         }
     }

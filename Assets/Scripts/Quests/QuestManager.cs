@@ -25,6 +25,11 @@ public class QuestManager : MonoBehaviour
     private readonly Dictionary<string, QuestRuntime> runtime = new();
     private ExpManager expManager;
 
+    // Entradas cujo questId não bate com nenhum QuestSO em allQuests (asset
+    // renomeado/removido durante balanceamento) — nunca descartadas silenciosamente,
+    // ficam aqui até o id voltar a existir (ver GetState).
+    private readonly List<QuestSave> unresolvedQuests = new();
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -57,6 +62,12 @@ public class QuestManager : MonoBehaviour
     private void OnDisable()
     {
         Enemy_Health.OnMonsterDefeated -= HandleMonsterDefeated;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     private QuestRuntime GetRuntime(QuestSO quest)
@@ -117,19 +128,20 @@ public class QuestManager : MonoBehaviour
 
         state.state = QuestState.TurnedIn;
 
-        expManager?.GainExperience(quest.xpReward);
+        if (expManager != null)
+            expManager.GainExperience(quest.xpReward);
 
         OnQuestUpdated?.Invoke(quest);
     }
 
-    private void HandleMonsterDefeated(int exp, string displayName)
+    private void HandleMonsterDefeated(int exp, EnemyArchetypeSO archetype)
     {
         foreach (QuestSO quest in allQuests)
         {
             if (quest == null || quest.objectiveType != QuestObjectiveType.KillEnemies)
                 continue;
 
-            if (quest.targetId != displayName)
+            if (quest.targetArchetype != archetype)
                 continue;
 
             QuestRuntime state = GetRuntime(quest);
@@ -171,10 +183,12 @@ public class QuestManager : MonoBehaviour
             result.Add(new QuestSave
             {
                 questId = quest.id,
-                state = (int)state.state,
+                state = state.state.ToString(),
                 progress = state.progress
             });
         }
+
+        result.AddRange(unresolvedQuests);
 
         return result;
     }
@@ -185,6 +199,7 @@ public class QuestManager : MonoBehaviour
     public void ApplyState(List<QuestSave> state)
     {
         runtime.Clear();
+        unresolvedQuests.Clear();
 
         foreach (QuestSO quest in allQuests)
         {
@@ -198,8 +213,19 @@ public class QuestManager : MonoBehaviour
             {
                 if (runtime.TryGetValue(saved.questId, out QuestRuntime questState))
                 {
-                    questState.state = (QuestState)saved.state;
+                    // Estado inválido/desconhecido (save corrompido ou editado à mão)
+                    // fica no seed Available em vez de corromper o runtime — nunca crasha.
+                    if (Enum.TryParse(saved.state, out QuestState parsedState))
+                        questState.state = parsedState;
+                    else
+                        Debug.LogWarning($"QuestManager: estado '{saved.state}' inválido pra quest '{saved.questId}' — mantendo Available.");
+
                     questState.progress = saved.progress;
+                }
+                else
+                {
+                    Debug.LogWarning($"QuestManager: questId '{saved.questId}' não encontrado em allQuests — preservado cru em vez de descartado.");
+                    unresolvedQuests.Add(saved);
                 }
             }
         }

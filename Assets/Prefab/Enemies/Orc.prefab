@@ -275,8 +275,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.03448534, y: -0.10231918}
-  m_Size: {x: 0.6720276, y: 1.5656713}
+  m_Offset: {x: 0.017731309, y: -0.0688113}
+  m_Size: {x: 0.70553565, y: 1.4986556}
   m_Direction: 0
 --- !u!114 &2180749193903047673
 MonoBehaviour:
@@ -297,9 +297,19 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 8
-  flipCooldown: 0.3
   aggroRange: 10
   loseAggroRange: 15
+  facingSmoothing: 10
+  flipEnterSpeed: 0.35
+  flipCommitTime: 0.12
+  repathMoveThreshold: 0.25
+  separationStrength: 1.5
+  maxSeparation: 2
+  navSampleDistance: 0.75
+  stuckCheckInterval: 0.5
+  stuckMoveFraction: 0.25
+  unstuckDuration: 0.4
+  unstuckStrength: 1
   healthBarTransform: {fileID: 8330729911952683418}
 --- !u!114 &2008271323046871707
 MonoBehaviour:

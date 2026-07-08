@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Orc Ranged
   m_EditorClassIdentifier: Assembly-CSharp::EnemyArchetypeSO
   displayName: Orc Ranged
+  id: 5cf99fc406d546c09edfa5f465c645db
   maxHealth: 500
   armor: 0
   attackPower: 40

@@ -28,6 +28,9 @@ public class CombatManager : MonoBehaviour
     // de novo para objetos que já existiam na cena — só OnEnable roda.
     private void OnEnable()
     {
+        if (Instance != null && Instance != this)
+            return;
+
         Instance = this;
     }
 

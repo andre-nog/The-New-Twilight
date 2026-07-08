@@ -108,7 +108,7 @@ public class EquippedSlot : MonoBehaviour,
         if (eventData.button != PointerEventData.InputButton.Left)
             return;
 
-        if (equippedItem == null)
+        if (equippedItem == null || InventoryDragController.Instance == null)
             return;
 
         wasDragged = true;
@@ -117,7 +117,7 @@ public class EquippedSlot : MonoBehaviour,
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!InventoryDragController.Instance.IsDragging)
+        if (InventoryDragController.Instance == null || !InventoryDragController.Instance.IsDragging)
             return;
 
         InventoryDragController.Instance.UpdateGhostPosition(eventData);
@@ -125,12 +125,14 @@ public class EquippedSlot : MonoBehaviour,
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        InventoryDragController.Instance.EndDrag();
+        if (InventoryDragController.Instance != null)
+            InventoryDragController.Instance.EndDrag();
     }
 
     public void OnDrop(PointerEventData eventData)
     {
-        InventoryDragController.Instance.TryDrop(this);
+        if (InventoryDragController.Instance != null)
+            InventoryDragController.Instance.TryDrop(this);
     }
 
     public void OnPointerEnter(PointerEventData eventData)

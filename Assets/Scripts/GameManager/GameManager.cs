@@ -52,42 +52,128 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // GameManager é DontDestroyOnLoad — Start() só roda uma vez, na primeira cena.
+        // Sem isso, um reload de cena (usado pelo pipeline de load pra reconstruir o
+        // mundo) deixa SkillBarUI/InventoryDragController/SkillDragController/expManager
+        // apontando pra objetos antigos destruídos, quebrando HUD e drag-and-drop.
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void OnEnable()
     {
+        if (Instance != null && Instance != this)
+            return;
+
         Instance = this;
     }
 
+    // Setado por EnterWorld antes do reload, consumido uma vez em FinishEnteringWorld
+    // depois que a cena termina de recarregar. null = não há reload pendente (boot
+    // frio já cai direto em FinishEnteringWorld via Start()).
+    private string pendingSlotToApply;
+
     private void Start()
     {
+        // Boot: a própria engine já fez o "teardown" (carregou a cena do zero antes
+        // de qualquer script rodar) — só falta o bootstrap. pendingSlotToApply começa
+        // null (nenhuma UI de "Continuar" existe ainda), então o jogo sempre nasce
+        // limpo; carregar um save no boot seria uma chamada explícita a EnterWorld
+        // em algum ponto futuro (menu), não o padrão de hoje.
+        FinishEnteringWorld();
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        FinishEnteringWorld();
+    }
+
+    // Único ponto que combina "bootstrap" com "aplicar save" — Start() (boot) e
+    // OnSceneLoaded() (reload) convergem aqui, então não existe um segundo caminho
+    // de carregamento em paralelo.
+    private void FinishEnteringWorld()
+    {
+        InitializeSceneBootstrap();
+
+        if (pendingSlotToApply != null)
+            LoadGame(pendingSlotToApply);
+
+        pendingSlotToApply = null;
+    }
+
+    // Reconstrói tudo que era um one-shot em Start() — precisa rodar de novo após
+    // CADA carregamento de cena (boot inicial e qualquer reload posterior), não só
+    // na primeira vez, senão os singletons scene-local recém-recriados ficam sem
+    // seus consumidores globais reconectados.
+    private void InitializeSceneBootstrap()
+    {
         // Antes de SkillBarUI: a barra só semeia slots com skills já aprendidas, então
-        // a progressão precisa existir primeiro.
+        // a progressão precisa existir primeiro. EnsureCreated() é idempotente pra
+        // singletons DontDestroyOnLoad (SkillProgression) — não-ops em reloads seguintes.
         SkillProgression.EnsureCreated();
         SkillBarUI.EnsureCreated();
         InventoryDragController.EnsureCreated();
         SkillDragController.EnsureCreated();
+        WorldItemRegistry.EnsureCreated();
         expManager = FindAnyObjectByType<ExpManager>();
+
+        // virtualCamera/playerRespawnPoint são referências scene-local atribuídas no
+        // Inspector — mesmo problema do expManager: um reload destrói o objeto antigo
+        // e o campo fica "fake-null". Sem re-resolver aqui, a câmera nunca realinha
+        // com o player novo (o mundo parece "sumir"/inimigos ficam fora de quadro,
+        // ainda que o gameplay continue normal) e um respawn de morte cai em
+        // Vector3.zero em vez do ponto correto.
+        virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        playerRespawnPoint = PlayerRespawnPoint.Instance != null ? PlayerRespawnPoint.Instance.transform : null;
     }
 
-    // F5/F9 lêem o teclado direto (Keyboard.current) em vez de entrar no Input
-    // Actions asset — é debug-only, não vale adicionar bindings pra isso.
+    // Ponto único de entrada pra "recarregar o mundo": teardown (reload de cena,
+    // destrói tudo scene-local — inimigos, spawners, managers scene-local, UI) ->
+    // rebuild (InitializeSceneBootstrap, via OnSceneLoaded) -> aplica o slot pedido
+    // (ou nenhum, pra "Novo Jogo"). Todo carregamento passa por aqui — F9 e qualquer
+    // UI futura de "Carregar"/"Novo Jogo" chamam isto, nunca LoadGame() direto. Isso
+    // também é o que restaura o mundo (inimigos voltam pros spawners na posição
+    // autorada, com stats corretos) sem precisar serializar nada sobre eles — ver
+    // Enemy_Health/EnemySpawner, que já regeneram do zero em qualquer Awake/Start novo.
+    public void EnterWorld(string slotToApply)
+    {
+        pendingSlotToApply = slotToApply;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    // F5/F9/F6 lêem o teclado direto (Keyboard.current) em vez de entrar no Input
+    // Actions asset — é debug-only, não vale adicionar bindings pra isso. Compilados
+    // fora de builds reais: em release não existe quicksave/quickload pra scummar
+    // (F9-undo de uma compra ruim, etc.), zero custo em runtime fora do Editor.
+#if UNITY_EDITOR
     private void Update()
     {
         if (Keyboard.current == null)
             return;
 
+        // Slot dedicado pro atalho — nunca é slot1/slot2/slot3 (esses são pra
+        // progresso "de verdade"), então quicksave/quickload de iteração nunca
+        // sobrescreve um save deliberado.
         if (Keyboard.current.f5Key.wasPressedThisFrame)
-            SaveGame();
+            SaveGame(SaveService.DebugSlot);
 
         if (Keyboard.current.f9Key.wasPressedThisFrame)
-            LoadGame();
+            EnterWorld(SaveService.DebugSlot);
+
+        // Reconstrói o mundo do zero SEM aplicar nenhum save — útil pra testar que
+        // inimigos puxados/mortos voltam certo (ver Fase 5) sem precisar de um
+        // save válido.
+        if (Keyboard.current.f6Key.wasPressedThisFrame)
+            EnterWorld(null);
     }
+#endif
 
     private void OnDestroy()
     {
         if (Instance == this)
             Instance = null;
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     // Chamado tanto no boot (player inicial da cena) quanto em todo respawn — a nova
@@ -97,13 +183,28 @@ public class GameManager : MonoBehaviour
     {
         Player = player;
 
+        // Chamado a partir do Awake() do player — que roda ANTES do evento
+        // sceneLoaded (Unity só dispara sceneLoaded depois que TODO Awake/OnEnable
+        // da cena nova termina). Num reload, InitializeSceneBootstrap ainda não
+        // re-resolveu virtualCamera nesse ponto, então essa chamada precisa se
+        // virar sozinha em vez de confiar na ordem — senão a câmera falha
+        // silenciosamente sempre na primeira chamada de cada reload.
+        if (virtualCamera == null)
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+
         if (virtualCamera != null)
             virtualCamera.Target.TrackingTarget = player;
 
         PlayerSkillManager skillManager = player.GetComponent<PlayerSkillManager>();
 
         if (skillManager != null)
+        {
+            // Garante slots construídos antes do Rebind ler GetSkillAt/GetIconAt — Awake()
+            // de PlayerSkillManager pode ainda não ter rodado nesta mesma instância (ver
+            // comentário em PlayerSkillManager.EnsureSlotsBuilt).
+            skillManager.EnsureSlotsBuilt();
             SkillBarUI.Rebind(skillManager);
+        }
     }
 
     // Destrói o player atual (se existir) e instancia um novo a partir do prefab —
@@ -152,38 +253,55 @@ public class GameManager : MonoBehaviour
             operation.completed += _ => onLoaded();
     }
 
-    public void SaveGame()
+    public void SaveGame(string slot)
     {
         if (Player == null || StatsManager.Instance == null)
+        {
+            Debug.LogError("GameManager: SaveGame abortado — Player ou StatsManager ausente.");
             return;
+        }
+
+        // Nenhum manager obrigatório pode faltar: gravar lista vazia/zero por cima
+        // de um save bom apagaria progresso silenciosamente. Aborta em vez disso.
+        if (InventoryManager.Instance == null || EquipmentManager.Instance == null ||
+            QuestManager.Instance == null || GoldManager.Instance == null || expManager == null ||
+            WorldItemRegistry.Instance == null)
+        {
+            Debug.LogError("GameManager: SaveGame abortado — um manager obrigatório está ausente.");
+            return;
+        }
+
+        StatsSave stats = StatsManager.Instance.GetState();
 
         SaveData data = new()
         {
+            sceneId = SceneManager.GetActiveScene().name,
             player = new PlayerSave
             {
-                classId = StatsManager.Instance.CurrentClass != null ? StatsManager.Instance.CurrentClass.Id : null,
-                level = StatsManager.Instance.level,
-                currentExp = expManager != null ? expManager.currentExp : 0,
-                currentHealth = StatsManager.Instance.currentHealth,
-                currentMana = StatsManager.Instance.currentMana,
+                classId = stats.classId,
+                level = stats.level,
+                currentExp = expManager.GetState(),
+                currentHealth = stats.currentHealth,
+                currentMana = stats.currentMana,
                 position = Player.position
             },
-            inventory = InventoryManager.Instance != null ? InventoryManager.Instance.GetState() : new(),
-            equipment = EquipmentManager.Instance != null ? EquipmentManager.Instance.GetState() : new(),
-            quests = QuestManager.Instance != null ? QuestManager.Instance.GetState() : new(),
-            gold = GoldManager.Instance != null ? GoldManager.Instance.GetState() : 0
+            inventory = InventoryManager.Instance.GetState(),
+            equipment = EquipmentManager.Instance.GetState(),
+            quests = QuestManager.Instance.GetState(),
+            gold = GoldManager.Instance.GetState(),
+            collectedWorldItems = WorldItemRegistry.Instance.GetState()
         };
 
-        SaveService.Save(data);
-        Debug.Log("Jogo salvo.");
+        SaveService.Save(slot, data);
+        Debug.Log($"Jogo salvo (slot '{slot}').");
     }
 
     // Ordem importa: classe → level/exp → recalc (já dentro de SetClass/SetLevel) →
     // equipamento (que já faz unequip-all antes de reaplicar) → inventário →
     // vitals (clampam contra o MaxHealth/MaxMana já corretos) → posição.
-    public void LoadGame()
+    public void LoadGame(string slot)
     {
-        if (!SaveService.TryLoad(out SaveData data))
+        if (!SaveService.TryLoad(slot, out SaveData data))
             return;
 
         if (StatsManager.Instance == null || Player == null)
@@ -204,7 +322,14 @@ public class GameManager : MonoBehaviour
         StatsManager.Instance.SetLevel(data.player.level);
 
         if (expManager != null)
-            expManager.currentExp = data.player.currentExp;
+            expManager.ApplyState(data.player.currentExp);
+
+        // Antes do InventoryManager.ApplyState não é estritamente necessário (não há
+        // dependência entre eles), mas roda cedo pra deixar claro que qualquer
+        // WorldItem cujo Start() rode depois (nesta mesma cena recém-recarregada) já
+        // vai encontrar o registro de coletados correto.
+        if (WorldItemRegistry.Instance != null)
+            WorldItemRegistry.Instance.ApplyState(data.collectedWorldItems);
 
         if (EquipmentManager.Instance != null)
             EquipmentManager.Instance.ApplyState(data.equipment, itemDatabase);
@@ -216,16 +341,13 @@ public class GameManager : MonoBehaviour
 
         Player.position = data.player.position;
 
-        if (expManager != null)
-            expManager.UpdateUI();
-
         if (QuestManager.Instance != null)
             QuestManager.Instance.ApplyState(data.quests);
 
         if (GoldManager.Instance != null)
             GoldManager.Instance.ApplyState(data.gold);
 
-        Debug.Log("Jogo carregado.");
+        Debug.Log($"Jogo carregado (slot '{slot}').");
     }
 
     private ClassDefinitionSO FindClassById(string id)

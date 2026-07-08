@@ -77,6 +77,15 @@ public class SkillBarUI : MonoBehaviour
         skillManager = manager;
         resourceManager = manager.GetComponent<ResourceManager>();
 
+        // Sem isso, cada SkillBarSlot continua com a referência ao PlayerSkillManager
+        // antigo (destruído no respawn) — TickCooldown vê skillManager == null (fake-null
+        // da Unity) e para de atualizar, travando o preenchimento de cooldown congelado.
+        if (slots != null)
+        {
+            foreach (SkillBarSlot slot in slots)
+                slot.Initialize(manager);
+        }
+
         if (resourceManager != null)
         {
             resourceManager.OnResourceChanged += RefreshMomentum;

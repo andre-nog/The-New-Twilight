@@ -129,7 +129,7 @@ public class ItemSlot : MonoBehaviour,
         if (eventData.button != PointerEventData.InputButton.Left)
             return;
 
-        if (item == null)
+        if (item == null || InventoryDragController.Instance == null)
             return;
 
         wasDragged = true;
@@ -138,7 +138,7 @@ public class ItemSlot : MonoBehaviour,
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!InventoryDragController.Instance.IsDragging)
+        if (InventoryDragController.Instance == null || !InventoryDragController.Instance.IsDragging)
             return;
 
         InventoryDragController.Instance.UpdateGhostPosition(eventData);
@@ -146,12 +146,14 @@ public class ItemSlot : MonoBehaviour,
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        InventoryDragController.Instance.EndDrag();
+        if (InventoryDragController.Instance != null)
+            InventoryDragController.Instance.EndDrag();
     }
 
     public void OnDrop(PointerEventData eventData)
     {
-        InventoryDragController.Instance.TryDrop(this);
+        if (InventoryDragController.Instance != null)
+            InventoryDragController.Instance.TryDrop(this);
     }
 
     // Restaura um slot com quantidade exata já conhecida — usado pelo carregamento

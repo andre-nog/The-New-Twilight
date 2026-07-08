@@ -63,14 +63,23 @@ public class SkillBookUI : MonoBehaviour, ICancelable
         pointsText = points;
     }
 
+    // toggleAction aponta pra uma InputAction COMPARTILHADA (mesmo asset, não
+    // por-instância). Sem essa guarda, um Destroy+Instantiate concorrente (ex.: reload
+    // de cena) pode deixar o OnDisable adiado de uma instância antiga desabilitar a
+    // action que a instância nova acabou de ligar — mesmo bug já corrigido em
+    // PlayerTargeting.cs, mesma solução (guarda de "dono atual").
+    private static SkillBookUI activeInstance;
+
     private void OnEnable()
     {
+        activeInstance = this;
         toggleAction.action.Enable();
     }
 
     private void OnDisable()
     {
-        toggleAction.action.Disable();
+        if (activeInstance == this)
+            toggleAction.action.Disable();
     }
 
     private void Start()

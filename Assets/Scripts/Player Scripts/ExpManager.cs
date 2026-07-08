@@ -32,8 +32,8 @@ public class ExpManager : MonoBehaviour
         }
     }
 
-    // OnMonsterDefeated agora carrega displayName (pra QuestManager filtrar por
-    // tipo de inimigo) — GainExperience não precisa dele, daí o lambda.
+    // OnMonsterDefeated agora carrega o EnemyArchetypeSO (pra QuestManager filtrar
+    // por tipo de inimigo) — GainExperience não precisa dele, daí o lambda.
     private Enemy_Health.MonsterDefeated onMonsterDefeatedHandler;
 
     private void OnEnable()
@@ -87,5 +87,15 @@ public class ExpManager : MonoBehaviour
 
         if (currentLevelText != null && StatsManager.Instance != null)
             currentLevelText.text = "Level: " + StatsManager.Instance.level;
+    }
+
+    // Contrato de save — mesmo padrão de GoldManager.GetState/ApplyState (um único
+    // valor primitivo, sem DTO dedicado).
+    public int GetState() => currentExp;
+
+    public void ApplyState(int exp)
+    {
+        currentExp = exp;
+        UpdateUI();
     }
 }

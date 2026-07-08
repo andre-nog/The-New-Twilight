@@ -15,6 +15,7 @@ MonoBehaviour:
   skillName: Stomp
   skillType: 2
   icon: {fileID: 0}
+  description: 
   autoLearnedAtStart: 0
   levels:
   - requiredPlayerLevel: 5
@@ -32,6 +33,7 @@ MonoBehaviour:
   id: 646f9851ecc2b6845a7a45b8be6412d3
   requiresTarget: 0
   lockMovementDuringCast: 1
+  followTargetWhileOnCooldown: 0
   cooldown: 12
   range: 0
   damageMultiplier: 1.5
@@ -43,5 +45,6 @@ MonoBehaviour:
   hitVFX: {fileID: 8523588817701343864, guid: c7cae6474a7e11f48b74c22a9496dedc, type: 3}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: PowerStrike
+  maxCastDuration: 3
   radius: 2.5
   momentumScaling: 0.5
