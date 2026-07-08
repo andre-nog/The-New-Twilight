@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89d128acb51b408eb0ebbce23be815c5, type: 3}
+  m_Name: Goblin_ranged
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyArchetypeSO
+  displayName: Goblin
+  id: 1be2df8f95de40af8c9e48b15c61b326
+  maxHealth: 5
+  armor: 5
+  attackPower: 0
+  criticalChance: 0
+  criticalDamage: 100
+  attackCooldown: 2
+  attackWindup: 0.5
+  attackRecovery: 0.2
+  moveSpeed: 2
+  returnSpeed: 2
+  detectionRange: 6
+  attackRange: 5
+  chaseDistanceLimit: 15
+  physicalRadius: 0.2
+  physicalHeight: 0.2
+  defaultSprite: {fileID: 0}
+  animatorOverride: {fileID: 22100000, guid: bdbafc5508e07d14d98180811129f0d4, type: 2}
+  attackSfx: {fileID: 0}
+  hitSfx: {fileID: 0}
+  deathSfx: {fileID: 0}
+  healthBarOffset: {x: 0, y: 0.637, z: 0}
+  damageTextOffset: {x: 0, y: 0.5, z: 0}
+  xpTextOffset: {x: 0, y: 0.5, z: 0}
+  goldTextOffset: {x: 0, y: 0.25, z: 0}
+  expReward: 4
+  goldReward: 1

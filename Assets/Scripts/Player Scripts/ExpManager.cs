@@ -49,7 +49,7 @@ public class ExpManager : MonoBehaviour
         onMonsterDefeatedHandler = (exp, gold, archetype, position) =>
         {
             GainExperience(exp);
-            StartCoroutine(ShowXpPopupDelayed(exp, position));
+            StartCoroutine(ShowXpPopupDelayed(exp, archetype, position));
         };
 
         Enemy_Health.OnMonsterDefeated += onMonsterDefeatedHandler;
@@ -74,12 +74,14 @@ public class ExpManager : MonoBehaviour
         UpdateUI();
     }
 
-    private IEnumerator ShowXpPopupDelayed(int exp, Vector3 position)
+    private IEnumerator ShowXpPopupDelayed(int exp, EnemyArchetypeSO archetype, Vector3 position)
     {
         yield return new WaitForSeconds(XpPopupDelay);
 
+        Vector3 offset = archetype != null ? archetype.xpTextOffset : Vector3.up * 0.5f;
+
         if (DamageManager.Instance != null)
-            DamageManager.Instance.CreateRewardPopup(position + Vector3.up * 0.5f, $"+{exp} XP", XpPopupColor);
+            DamageManager.Instance.CreateRewardPopup(position + offset, $"+{exp} XP", XpPopupColor);
     }
 
     public void GainExperience(int amount)

@@ -46,7 +46,7 @@ public class GoldManager : MonoBehaviour
             AddGold(gold);
 
             if (gold > 0)
-                StartCoroutine(ShowGoldPopupDelayed(gold, position));
+                StartCoroutine(ShowGoldPopupDelayed(gold, archetype, position));
         };
 
         Enemy_Health.OnMonsterDefeated += onMonsterDefeatedHandler;
@@ -57,12 +57,14 @@ public class GoldManager : MonoBehaviour
         Enemy_Health.OnMonsterDefeated -= onMonsterDefeatedHandler;
     }
 
-    private IEnumerator ShowGoldPopupDelayed(int gold, Vector3 position)
+    private IEnumerator ShowGoldPopupDelayed(int gold, EnemyArchetypeSO archetype, Vector3 position)
     {
         yield return new WaitForSeconds(GoldPopupDelay);
 
+        Vector3 offset = archetype != null ? archetype.goldTextOffset : Vector3.up * 0.25f;
+
         if (DamageManager.Instance != null)
-            DamageManager.Instance.CreateRewardPopup(position + Vector3.up * 0.25f, $"+{gold}g", GoldPopupColor);
+            DamageManager.Instance.CreateRewardPopup(position + offset, $"+{gold}g", GoldPopupColor);
     }
 
     private void Start()

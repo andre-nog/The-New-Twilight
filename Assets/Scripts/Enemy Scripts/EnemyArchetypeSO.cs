@@ -47,11 +47,50 @@ public class EnemyArchetypeSO : ScriptableObject
     public float armor = 0f;
 
     [Header("Ataque")]
-    [Tooltip("Potencial ofensivo bruto — cada golpe multiplica isso pelo skillMultiplier do componente de ataque.")]
+    [Tooltip("Dano do ataque básico deste inimigo (corpo a corpo ou projétil, conforme o componente presente) — valor direto, mitigado pela Armor do alvo. Habilidades (Enemy_Abilities) têm seu próprio dano, independente deste.")]
     public float attackPower = 1f;
     [Range(0, 100)]
     public float criticalChance = 0f;
     public float criticalDamage = 100f;
+
+    [Tooltip("Tempo entre um ataque corpo a corpo e o próximo ficar disponível.")]
+    public float attackCooldown = 2f;
+    [Tooltip("Tempo entre o gatilho da animação de ataque e o dano ser de fato aplicado — substitui o Animation Event antigo, cravado no clipe. Ajuste pra casar com o instante do golpe na animação.")]
+    public float attackWindup = 0.28f;
+    [Tooltip("Tempo depois do dano até o inimigo voltar a poder se mover/perseguir.")]
+    public float attackRecovery = 0.2f;
+
+    [Header("Movimento")]
+    public float moveSpeed = 2f;
+    [Tooltip("Velocidade ao retornar pro ponto de spawn — hoje pode ser igual ou diferente de moveSpeed.")]
+    public float returnSpeed = 2f;
+    public float detectionRange = 5f;
+    public float attackRange = 1.2f;
+    [Tooltip("Distância do spawn a partir da qual o inimigo desiste da perseguição e volta.")]
+    public float chaseDistanceLimit = 15f;
+
+    [Header("Físico")]
+    [Tooltip("Aplicado no NavMeshAgent do inimigo ao entrar em cena.")]
+    public float physicalRadius = 0.2f;
+    public float physicalHeight = 0.2f;
+
+    [Header("Visual")]
+    [Tooltip("Sprite inicial do SpriteRenderer — a animação assume o controle depois.")]
+    public Sprite defaultSprite;
+    [Tooltip("Animator Override Controller sobre a base compartilhada (EnemyBase.controller) — troca só os clipes, nunca o grafo/parâmetros.")]
+    public AnimatorOverrideController animatorOverride;
+
+    [Header("Áudio (opcional)")]
+    public AudioClip attackSfx;
+    public AudioClip hitSfx;
+    public AudioClip deathSfx;
+
+    [Header("UI Flutuante")]
+    [Tooltip("Deslocamento da barra de vida acima do inimigo — depende do tamanho do sprite.")]
+    public Vector3 healthBarOffset = new Vector3(0f, 0.637f, 0f);
+    public Vector3 damageTextOffset = new Vector3(0f, 0.5f, 0f);
+    public Vector3 xpTextOffset = new Vector3(0f, 0.5f, 0f);
+    public Vector3 goldTextOffset = new Vector3(0f, 0.25f, 0f);
 
     [Header("Recompensa")]
     public int expReward = 3;

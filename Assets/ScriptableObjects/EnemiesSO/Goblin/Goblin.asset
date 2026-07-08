@@ -19,5 +19,24 @@ MonoBehaviour:
   attackPower: 0
   criticalChance: 0
   criticalDamage: 100
+  attackCooldown: 2
+  attackWindup: 0.2833333
+  attackRecovery: 0.2
+  moveSpeed: 2
+  returnSpeed: 2
+  detectionRange: 3
+  attackRange: 1.2
+  chaseDistanceLimit: 15
+  physicalRadius: 0.2
+  physicalHeight: 0.2
+  defaultSprite: {fileID: 0}
+  animatorOverride: {fileID: 22100000, guid: 8bebb6fdbb09ad64591b30dc501fdf8b, type: 2}
+  attackSfx: {fileID: 0}
+  hitSfx: {fileID: 0}
+  deathSfx: {fileID: 0}
+  healthBarOffset: {x: 0, y: 0.637, z: 0}
+  damageTextOffset: {x: 0, y: 0.5, z: 0}
+  xpTextOffset: {x: 0, y: 0.5, z: 0}
+  goldTextOffset: {x: 0, y: 0.25, z: 0}
   expReward: 4
   goldReward: 1

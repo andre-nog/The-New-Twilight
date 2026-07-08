@@ -1,15 +1,20 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 
 public class Enemy_Movement : MonoBehaviour
 {
-    public float speed;
-    public float attackRange = 2;
-    public float attackCooldown = 2;
-    public float playerDetectRange = 5;
+    // Estes cinco (+ returnSpeed) agora vêm do EnemyArchetypeSO em Start() — os
+    // valores aqui são só o fallback caso o inimigo não tenha um archetype
+    // atribuído (nunca deveria acontecer em produção, mas evita um inimigo
+    // congelado/mudo em vez de um erro silencioso).
+    private float speed = 2f;
+    private float returnSpeed = 2f;
+    private float attackRange = 2f;
+    private float attackCooldown = 2f;
+    private float playerDetectRange = 5f;
     public LayerMask playerLayer;
-    public float aggroRange = 10f; // ainda sem uso - não toquei nele agora
-    public float loseAggroRange = 15f;
+    private float loseAggroRange = 15f;
 
     [Header("Facing (flip)")]
     // Facing is decided by SMOOTHED horizontal velocity, not by position relative to the target.
@@ -22,6 +27,9 @@ public class Enemy_Movement : MonoBehaviour
 
     [Header("Pathing")]
     [SerializeField] private float repathMoveThreshold = 0.25f; // only repath if target moved more than this
+
+    [Tooltip("Histerese na borda do alcance de ataque: uma vez parado, só volta a perseguir se o alvo se afastar além de attackRange + isto. Sem isso, um alvo parado bem na borda faz o inimigo oscilar Idle/Chasing a cada frame e 'deslizar' um passinho a cada oscilação, em vez de ficar parado de fato.")]
+    [SerializeField] private float attackRangeHysteresis = 0.3f;
 
     [Header("Steering / separation")]
     // The NavMeshAgent is used for PATHFINDING ONLY (updatePosition = false): we read its path
@@ -75,9 +83,15 @@ public class Enemy_Movement : MonoBehaviour
     private NavMeshAgent agent;
     private Vector3 spawnPosition;
     private Enemy_Health enemyHealth;
-    [SerializeField] private Transform healthBarTransform;
+    private IEnemyBasicAttack combat; // Enemy_Combat (corpo a corpo) ou Enemy_RangedBasicAttack (à distância) — o que existir no prefab
+    private EnemyStats stats;
 
-    // Awake/OnDestroy (não OnEnable/OnDisable): scripts de ataque (ex.: Enemy_RangedAttack)
+    // Encontrado via GetComponentInChildren em Start() — nenhum prefab precisa mais
+    // arrastar isso manualmente no Inspector, contanto que siga a hierarquia padrão
+    // (Canvas > HealthBar com um Slider) do prefab-template.
+    private Transform healthBarTransform;
+
+    // Awake/OnDestroy (não OnEnable/OnDisable): scripts de ataque (ex.: Enemy_Abilities)
     // desabilitam este componente temporariamente durante telegraph/arremesso — se a
     // inscrição fosse por OnEnable/OnDisable, o desaggro seria perdido caso o player
     // morresse exatamente nessa janela, e o inimigo continuaria atacando um alvo morto.
@@ -86,7 +100,7 @@ public class Enemy_Movement : MonoBehaviour
         PlayerHealth.OnPlayerDied += ForceDeaggro;
 
         // Register with the shared separation grid. Awake/OnDestroy (not OnEnable/OnDisable) so a
-        // telegraphing enemy — which disables this component (see Enemy_RangedAttack) — still
+        // telegraphing enemy — which disables this component (see Enemy_Abilities) — still
         // counts as a neighbour that others steer around while it is frozen.
         EnemyFlockManager.EnsureExists();
         flock = EnemyFlockManager.Instance;
@@ -125,6 +139,30 @@ public class Enemy_Movement : MonoBehaviour
         anim = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
         enemyHealth = GetComponent<Enemy_Health>();
+        combat = GetComponent<IEnemyBasicAttack>();
+        stats = GetComponent<EnemyStats>();
+
+        EnemyArchetypeSO archetype = stats != null ? stats.Archetype : null;
+
+        if (archetype != null)
+        {
+            speed = archetype.moveSpeed;
+            returnSpeed = archetype.returnSpeed;
+            attackRange = archetype.attackRange;
+            attackCooldown = archetype.attackCooldown;
+            playerDetectRange = archetype.detectionRange;
+            loseAggroRange = archetype.chaseDistanceLimit;
+        }
+
+        // Mesma hierarquia em todo prefab de inimigo (template) — encontrado aqui
+        // em vez de arrastado no Inspector por prefab.
+        healthBarTransform = GetComponentInChildren<Slider>()?.transform;
+
+        // healthBarOffset mora no pai do Slider (o Canvas world-space) — é essa
+        // posição que varia de inimigo pra inimigo (ex.: Goblin baixo vs. Orc alto),
+        // não a do próprio Slider.
+        if (healthBarTransform != null && healthBarTransform.parent != null && archetype != null)
+            healthBarTransform.parent.localPosition = archetype.healthBarOffset;
 
         agent.updateRotation = false;
         agent.updateUpAxis = false;
@@ -213,7 +251,7 @@ public class Enemy_Movement : MonoBehaviour
             repathTimer = 0.2f;
         }
 
-        Steer(player.position);
+        Steer(player.position, speed);
     }
 
     // Stops our own movement. With updatePosition=false the agent's internal path-follow
@@ -235,14 +273,14 @@ public class Enemy_Movement : MonoBehaviour
     // surround the target instead of stacking into a wall — while the sample-clamp keeps them
     // from ever crossing a wall or leaving the walkable area, no matter how the separation force
     // pushes them.
-    void Steer(Vector3 destination)
+    void Steer(Vector3 destination, float moveSpeed)
     {
         Vector2 pathDir = GetPathDirection(destination);
 
         Vector2 separation = flock != null ? flock.ComputeSeparation(this) : Vector2.zero;
         separation = Vector2.ClampMagnitude(separation, maxSeparation) * separationStrength;
 
-        Vector2 desired = pathDir * speed + separation;
+        Vector2 desired = pathDir * moveSpeed + separation;
 
         // Short lateral bias after a detected jam — breaks a symmetric wall-of-enemies deadlock.
         if (unstuckTimer > 0f)
@@ -269,7 +307,7 @@ public class Enemy_Movement : MonoBehaviour
             currentVelocity = Vector2.zero; // no valid nearby navmesh point this frame — hold position
         }
 
-        UpdateStuck(destination);
+        UpdateStuck(destination, moveSpeed);
     }
 
     // Direction along the current navmesh path (toward the next corner), falling back to a
@@ -290,14 +328,14 @@ public class Enemy_Movement : MonoBehaviour
     // Genuine-stuck check: if we wanted to move but barely did over the interval, request ONE
     // fresh path and pick a side to slip past. This is the only repath trigger besides the
     // target actually moving, so NavMesh recalculations stay rare.
-    void UpdateStuck(Vector3 destination)
+    void UpdateStuck(Vector3 destination, float moveSpeed)
     {
         stuckTimer += Time.deltaTime;
         if (stuckTimer < stuckCheckInterval)
             return;
 
         float moved = ((Vector2)transform.position - lastStuckPos).magnitude;
-        float expected = speed * stuckTimer;
+        float expected = moveSpeed * stuckTimer;
 
         if (moved < expected * stuckMoveFraction)
         {
@@ -424,8 +462,17 @@ public class Enemy_Movement : MonoBehaviour
                 return;
             }
 
+            // Histerese: uma vez parado (Idle/Attacking), o alvo precisa se afastar além
+            // de attackRange + attackRangeHysteresis pra valer a pena voltar a perseguir.
+            // Perseguindo, o critério pra parar continua o attackRange exato. Sem essa
+            // assimetria, um alvo parado bem na borda do alcance faz o inimigo alternar
+            // Idle/Chasing a cada frame — e cada entrada em Chasing desliza um passinho
+            // via Steer(), mesmo sem nunca completar um ciclo de caminhada de verdade.
+            bool currentlyStopped = enemyState == EnemyState.Idle || enemyState == EnemyState.Attacking;
+            float effectiveAttackRange = currentlyStopped ? attackRange + attackRangeHysteresis : attackRange;
+
             // Está dentro do alcance de ataque.
-            if (distance <= attackRange)
+            if (distance <= effectiveAttackRange)
             {
                 StopMoving();
 
@@ -434,7 +481,9 @@ public class Enemy_Movement : MonoBehaviour
                     attackCooldownTimer = attackCooldown;
 
                     ChangeState(EnemyState.Attacking);
-                    anim.SetTrigger("Attack");
+
+                    if (combat != null)
+                        combat.BeginAttack();
                 }
                 else
                 {
@@ -474,7 +523,7 @@ public class Enemy_Movement : MonoBehaviour
 
     public bool IsAttacking => enemyState == EnemyState.Attacking;
 
-    // Usado por outras habilidades (ex.: Enemy_RangedAttack) para forçar a pose parada
+    // Usado por outras habilidades (ex.: Enemy_Abilities) para forçar a pose parada
     // enquanto assumem o controle do inimigo temporariamente.
     public void SetIdlePose()
     {
@@ -556,14 +605,16 @@ public class Enemy_Movement : MonoBehaviour
             return;
         }
 
-        Steer(spawnPosition);
+        Steer(spawnPosition, returnSpeed);
     }
 
+    // Chamado por Enemy_Combat ao fim da sequência de ataque (windup -> dano ->
+    // recovery), não mais por Animation Event.
     public void EndAttack()
     {
-        // Cobre o caso do próprio golpe ter matado o jogador (Attack() já roda antes
-        // deste evento, no mesmo clipe) e qualquer outro timing em que o alvo tenha
-        // morrido durante a animação de ataque.
+        // Cobre o caso do próprio golpe ter matado o jogador (ResolveDamage já rodou
+        // antes disso, dentro da mesma sequência) e qualquer outro timing em que o
+        // alvo tenha morrido durante a animação de ataque.
         if (!HasLiveTarget())
         {
             player = null;

@@ -290,19 +290,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29cad93555ec57f4d984d36da0de5574, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_Movement
-  speed: 2
-  attackRange: 1.2
-  attackCooldown: 2
-  playerDetectRange: 3
   playerLayer:
     serializedVersion: 2
     m_Bits: 8
-  aggroRange: 10
-  loseAggroRange: 15
   facingSmoothing: 10
   flipEnterSpeed: 0.35
   flipCommitTime: 0.12
   repathMoveThreshold: 0.25
+  attackRangeHysteresis: 0.3
   separationStrength: 1.5
   maxSeparation: 2
   navSampleDistance: 0.75
@@ -310,7 +305,6 @@ MonoBehaviour:
   stuckMoveFraction: 0.25
   unstuckDuration: 0.4
   unstuckStrength: 1
-  healthBarTransform: {fileID: 8330729911952683418}
 --- !u!114 &2008271323046871707
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -324,7 +318,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_Health
   currentHealth: 500
-  healthSlider: {fileID: 6907565815943171767}
 --- !u!114 &4940418779308193687
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -337,7 +330,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0810ffd219175e4c896daef0803b6ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_Combat
-  skillMultiplier: 0
+  ability: {fileID: 11400000, guid: 65bd1f596c6638a4d9222cb73732e348, type: 2}
 --- !u!114 &2587302240127941520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -384,15 +377,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f3a9c2e1d4b8f6a0c5e3b7d9a1f4c62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_RangedAttack
-  telegraphInterval: 4
-  telegraphDuration: 1
-  throwTravelTime: 0.2
-  skillMultiplier: 1
-  areaRadius: 1.5
-  playerFeetOffset: {x: 0, y: -0.48}
-  playerHitboxSize: {x: 0.3, y: 0.05}
-  telegraphPrefab: {fileID: 0}
-  projectilePrefab: {fileID: 0}
+  abilities:
+  - {fileID: 11400000, guid: b5cb2c25bd122b94ab1d024f509e6419, type: 2}
 --- !u!114 &1421387067943416920
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -31,6 +31,31 @@ public class EnemyStats : MonoBehaviour
     private void Awake()
     {
         RecalculateStats();
+        AutoConfigureFromArchetype();
+    }
+
+    // Aplica dados visuais/físicos do archetype direto nos componentes do próprio
+    // GameObject — elimina o passo manual de arrastar sprite/controller/radius no
+    // Inspector por prefab. Só toca o que existe; tudo aqui é opcional na prática.
+    private void AutoConfigureFromArchetype()
+    {
+        if (archetype == null)
+            return;
+
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && archetype.defaultSprite != null)
+            spriteRenderer.sprite = archetype.defaultSprite;
+
+        Animator animator = GetComponent<Animator>();
+        if (animator != null && archetype.animatorOverride != null)
+            animator.runtimeAnimatorController = archetype.animatorOverride;
+
+        UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null)
+        {
+            agent.radius = archetype.physicalRadius;
+            agent.height = archetype.physicalHeight;
+        }
     }
 
     public void AddModifier(StatModifier modifier)
@@ -48,6 +73,13 @@ public class EnemyStats : MonoBehaviour
     // Único lugar que deriva os valores finais do inimigo — base do archetype +
     // bônus dos modifiers (só o subconjunto de StatType que faz sentido para
     // inimigos hoje).
+    //
+    // Aviso de ordem: MaxHealth/Armor/AttackPower/etc. só ficam prontos DEPOIS
+    // deste método rodar (chamado em Awake). Um componente irmão só pode ler essas
+    // propriedades derivadas com segurança a partir do próprio Start() (Unity
+    // garante que todo Awake da cena roda antes de qualquer Start). Campos crus do
+    // archetype (stats.Archetype.xxx) não têm essa restrição — já valem antes de
+    // qualquer Awake rodar, por serem parte do asset, não calculados aqui.
     private void RecalculateStats()
     {
         if (archetype == null)
