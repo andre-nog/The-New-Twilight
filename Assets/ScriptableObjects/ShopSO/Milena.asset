@@ -18,3 +18,13 @@ MonoBehaviour:
     price: 10
   - item: {fileID: 11400000, guid: b7fea8b2a5a5e2048b3060f9314bf697, type: 2}
     price: 5
+  - item: {fileID: 11400000, guid: d001120024776eb4d9b80814f28841a6, type: 2}
+    price: 8
+  - item: {fileID: 11400000, guid: 7534cb9a60eba174da2a41ff988ed47d, type: 2}
+    price: 15
+  - item: {fileID: 11400000, guid: 943ba86b19a25fca0bc00a3009ed37b5, type: 2}
+    price: 20
+  - item: {fileID: 11400000, guid: 8e574bc70d46f2ef60ff5ec74fb2268e, type: 2}
+    price: 15
+  - item: {fileID: 11400000, guid: 3f36142b7b9553df2d3b48435e4cf9de, type: 2}
+    price: 25

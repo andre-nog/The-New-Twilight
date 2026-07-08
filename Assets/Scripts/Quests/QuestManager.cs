@@ -131,10 +131,13 @@ public class QuestManager : MonoBehaviour
         if (expManager != null)
             expManager.GainExperience(quest.xpReward);
 
+        if (GoldManager.Instance != null)
+            GoldManager.Instance.AddGold(quest.goldReward);
+
         OnQuestUpdated?.Invoke(quest);
     }
 
-    private void HandleMonsterDefeated(int exp, EnemyArchetypeSO archetype)
+    private void HandleMonsterDefeated(int exp, int gold, EnemyArchetypeSO archetype, Vector3 position)
     {
         foreach (QuestSO quest in allQuests)
         {

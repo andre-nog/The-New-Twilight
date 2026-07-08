@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 80e7b9f37ea5ded40bc8fa264f9d4f16, type: 3}
-  m_Name: Adaga
+  m_Name: Bronze Ring
   m_EditorClassIdentifier: Assembly-CSharp::ItemSO
-  itemName: Adaga
-  itemSprite: {fileID: -2485191185395028941, guid: b4b96396b9ee8fd4787310fb33f5ca87, type: 3}
-  description: Adaga mata geral
+  itemName: Bronze Ring
+  itemSprite: {fileID: 0}
+  description: A plain bronze band, faintly warm to the touch. Sharpens the wearer's edge in a fight.
   modifiers:
-  - stat: 6
+  - stat: 2
     amount: 2
-  - stat: 4
+  - stat: 8
     amount: 2
-  itemType: 7
+  itemType: 10
   stackable: 0
-  rarity: 0
-  value: 8
-  id: d001120024776eb4d9b80814f28841a6
+  rarity: 1
+  value: 13
+  id:

@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 80e7b9f37ea5ded40bc8fa264f9d4f16, type: 3}
-  m_Name: Adaga
+  m_Name: Worn Boots
   m_EditorClassIdentifier: Assembly-CSharp::ItemSO
-  itemName: Adaga
-  itemSprite: {fileID: -2485191185395028941, guid: b4b96396b9ee8fd4787310fb33f5ca87, type: 3}
-  description: Adaga mata geral
+  itemName: Worn Boots
+  itemSprite: {fileID: 0}
+  description: Well-worn but sturdy boots. A little padding underfoot, a little extra spring in the step.
   modifiers:
-  - stat: 6
-    amount: 2
-  - stat: 4
-    amount: 2
-  itemType: 7
+  - stat: 7
+    amount: 0.3
+  - stat: 3
+    amount: 3
+  itemType: 6
   stackable: 0
   rarity: 0
   value: 8
-  id: d001120024776eb4d9b80814f28841a6
+  id:

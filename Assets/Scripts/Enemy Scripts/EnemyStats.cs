@@ -25,6 +25,7 @@ public class EnemyStats : MonoBehaviour
     public float CriticalChance { get; private set; }
     public float CriticalDamage { get; private set; }
     public int ExpReward { get; private set; }
+    public int GoldReward { get; private set; }
     public string DisplayName { get; private set; }
 
     private void Awake()
@@ -93,6 +94,7 @@ public class EnemyStats : MonoBehaviour
         CriticalChance = criticalChance;
         CriticalDamage = criticalDamage;
         ExpReward = archetype.expReward;
+        GoldReward = archetype.goldReward;
         DisplayName = archetype.displayName;
     }
 }

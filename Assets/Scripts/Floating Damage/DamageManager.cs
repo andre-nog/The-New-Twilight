@@ -40,6 +40,18 @@ public class DamageManager : MonoBehaviour
 
     public void CreatePopup(Vector3 position, int damage, Color color)
     {
+        CreatePopup(position, damage.ToString(), color, isReward: false);
+    }
+
+    // Recompensas fora de dano (ouro/XP ao matar um inimigo) — mesmo visual/pool
+    // do dano, mas menor e sempre desenhado atrás dele (ver DamagePopup).
+    public void CreateRewardPopup(Vector3 position, string text, Color color)
+    {
+        CreatePopup(position, text, color, isReward: true);
+    }
+
+    private void CreatePopup(Vector3 position, string text, Color color, bool isReward)
+    {
         // Criado sob demanda (e não no Awake) porque domain reload zera o campo.
         pool ??= new ObjectPool<DamagePopup>(
             createFunc: () => Instantiate(damagePopupPrefab, transform),
@@ -50,7 +62,7 @@ public class DamageManager : MonoBehaviour
 
         DamagePopup popup = pool.Get();
         popup.transform.SetPositionAndRotation(position, Quaternion.identity);
-        popup.Setup(damage, color, ReleasePopup);
+        popup.Setup(text, color, isReward, ReleasePopup);
     }
 
     private void ReleasePopup(DamagePopup popup)

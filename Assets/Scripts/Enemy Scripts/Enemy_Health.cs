@@ -8,7 +8,7 @@ public class Enemy_Health : MonoBehaviour, IDamageable
     // archetype (não mais displayName) — QuestManager comparava por string exata
     // contra EnemyStats.DisplayName, frágil a rename/typo. Referência direta ao
     // asset nunca dessincroniza.
-    public delegate void MonsterDefeated(int exp, EnemyArchetypeSO archetype);
+    public delegate void MonsterDefeated(int exp, int gold, EnemyArchetypeSO archetype, Vector3 position);
     public static event MonsterDefeated OnMonsterDefeated;
 
     // Registro de inimigos vivos na cena — evita FindGameObjectsWithTag em quem
@@ -83,7 +83,7 @@ public class Enemy_Health : MonoBehaviour, IDamageable
         if (currentHealth <= 0 && !isDead)
         {
             isDead = true;
-            OnMonsterDefeated?.Invoke(stats.ExpReward, stats.Archetype);
+            OnMonsterDefeated?.Invoke(stats.ExpReward, stats.GoldReward, stats.Archetype, transform.position);
             Destroy(gameObject);
         }
     }

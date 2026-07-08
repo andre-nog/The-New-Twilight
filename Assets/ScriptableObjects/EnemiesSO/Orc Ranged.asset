@@ -19,4 +19,5 @@ MonoBehaviour:
   attackPower: 40
   criticalChance: 0
   criticalDamage: 100
-  expReward: 3
+  expReward: 9
+  goldReward: 3

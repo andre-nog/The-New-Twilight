@@ -10,15 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b3a14c071db4576a688e2a16240a17d, type: 3}
-  m_Name: KillGoblins
+  m_Name: RangedThreat
   m_EditorClassIdentifier: Assembly-CSharp::QuestSO
-  id: kill_10_goblins
-  questName: Goblin Trouble
-  description: Goblins have been raiding the area. Kill 10 of them to make the roads
-    safe again.
+  id: ranged_threat
+  questName: Ranged Threat
+  description: A pack of orc archers has taken up position nearby, picking off anyone who strays too close. Take them out at their own game.
   objectiveType: 0
-  targetArchetype: {fileID: 11400000, guid: 1be2df8f95de40af8c9e48b15c61b326, type: 2}
-  requiredAmount: 10
-  xpReward: 50
-  goldReward: 20
-  objectiveLabel: Kill Goblins
+  targetArchetype: {fileID: 11400000, guid: 5cf99fc406d546c09edfa5f465c645db, type: 2}
+  requiredAmount: 5
+  xpReward: 130
+  goldReward: 70
+  objectiveLabel: Kill Ranged Orcs

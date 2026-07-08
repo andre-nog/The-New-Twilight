@@ -1,16 +1,11 @@
+using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 using TMPro;
 
 public class ExpManager : MonoBehaviour
 {
     public int currentExp;
-
-    [Tooltip("Experiência necessária para sair do nível 1. Os níveis seguintes são derivados: baseExpToLevel * expGrowthMultiplier^(level-1).")]
-    [FormerlySerializedAs("expToLevel")]
-    public int baseExpToLevel = 10;
-    public float expGrowthMultiplier = 1.2f;
 
     // Image.fillAmount em vez de Slider — Slider.set_maxValue dispara um rebuild de
     // layout via SendMessage internamente, o que gera "SendMessage cannot be called
@@ -23,22 +18,40 @@ public class ExpManager : MonoBehaviour
     // Derivado do nível atual em vez de acumulado a cada level up — assim não há
     // como dessincronizar do StatsManager.level (que é editável no Inspector) e o
     // save só precisa guardar level + currentExp.
+    //
+    // Curva fixa (não mais base/multiplicador configuráveis no Inspector):
+    // xpToNextLevel = 100 + 50*(level-1) + 25*(level-1)^2.
     public int ExpToLevel
     {
         get
         {
             int level = StatsManager.Instance != null ? StatsManager.Instance.level : 1;
-            return Mathf.RoundToInt(baseExpToLevel * Mathf.Pow(expGrowthMultiplier, level - 1));
+            int n = level - 1;
+
+            return 100 + 50 * n + 25 * n * n;
         }
     }
 
     // OnMonsterDefeated agora carrega o EnemyArchetypeSO (pra QuestManager filtrar
-    // por tipo de inimigo) — GainExperience não precisa dele, daí o lambda.
+    // por tipo de inimigo) e a posição da morte (pro popup de XP) — GainExperience
+    // não precisa de nenhum dos dois, daí o lambda.
     private Enemy_Health.MonsterDefeated onMonsterDefeatedHandler;
+
+    private static readonly Color XpPopupColor = new(0.4f, 0.85f, 1f);
+
+    // Dano precisa aparecer primeiro e sozinho — o popup de XP espera um instante
+    // antes de nascer pra nunca competir visualmente com o número de dano do
+    // golpe que matou o inimigo (os dois nasceriam no mesmíssimo frame senão).
+    private const float XpPopupDelay = 0.15f;
 
     private void OnEnable()
     {
-        onMonsterDefeatedHandler = (exp, _) => GainExperience(exp);
+        onMonsterDefeatedHandler = (exp, gold, archetype, position) =>
+        {
+            GainExperience(exp);
+            StartCoroutine(ShowXpPopupDelayed(exp, position));
+        };
+
         Enemy_Health.OnMonsterDefeated += onMonsterDefeatedHandler;
 
         // Cobre level ups que não passam por GainExperience — edição manual de
@@ -59,6 +72,14 @@ public class ExpManager : MonoBehaviour
     private void Start()
     {
         UpdateUI();
+    }
+
+    private IEnumerator ShowXpPopupDelayed(int exp, Vector3 position)
+    {
+        yield return new WaitForSeconds(XpPopupDelay);
+
+        if (DamageManager.Instance != null)
+            DamageManager.Instance.CreateRewardPopup(position + Vector3.up * 0.5f, $"+{exp} XP", XpPopupColor);
     }
 
     public void GainExperience(int amount)

@@ -55,6 +55,7 @@ public class EnemyArchetypeSO : ScriptableObject
 
     [Header("Recompensa")]
     public int expReward = 3;
+    public int goldReward = 1;
 
     // Loot table entra aqui quando ouro/drops existirem (planejado no GDD) — não construir antes.
 }

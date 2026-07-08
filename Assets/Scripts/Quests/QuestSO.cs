@@ -23,6 +23,7 @@ public class QuestSO : ScriptableObject
 
     public int requiredAmount = 10;
     public int xpReward = 200;
+    public int goldReward;
 
     [Tooltip("Prefixo mostrado na janela e no tracker, ex.: \"Kill Goblins\".")]
     public string objectiveLabel = "Kill Enemies";
