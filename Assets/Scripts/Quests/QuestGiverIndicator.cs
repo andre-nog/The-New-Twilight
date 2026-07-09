@@ -30,22 +30,28 @@ public class QuestGiverIndicator : MonoBehaviour
         Refresh();
     }
 
+    // A quest que mudou pode não ser mais a CurrentQuest no instante do evento
+    // (ex.: entregar a quest N dispara OnQuestUpdated(questN), mas é a N+1 que
+    // vira CurrentQuest) — por isso o filtro é "pertence a esta NPC", não
+    // "é a atual", e o Refresh() sempre lê CurrentQuest de novo, já atualizada.
     private void HandleQuestUpdated(QuestSO changed)
     {
-        if (changed == interactable.Quest)
+        if (interactable.OwnsQuest(changed))
             Refresh();
     }
 
     private void Refresh()
     {
-        if (interactable.Quest == null || QuestManager.Instance == null)
+        QuestSO current = interactable.CurrentQuest;
+
+        if (current == null || QuestManager.Instance == null)
         {
             availableIcon.SetActive(false);
             readyIcon.SetActive(false);
             return;
         }
 
-        QuestState state = QuestManager.Instance.GetQuestState(interactable.Quest);
+        QuestState state = QuestManager.Instance.GetQuestState(current);
 
         availableIcon.SetActive(state == QuestState.Available);
         readyIcon.SetActive(state == QuestState.ReadyToComplete);

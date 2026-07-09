@@ -46,11 +46,8 @@ TagManager:
   - name: Character Effects
     uniqueID: 4183864605
     locked: 0
-  - name: Enemy
+  - name: Characters
     uniqueID: 3870641307
-    locked: 0
-  - name: NPC
-    uniqueID: 3506822185
     locked: 0
   - name: Default
     uniqueID: 0

@@ -14,17 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyArchetypeSO
   displayName: Goblin
   id: 1be2df8f95de40af8c9e48b15c61b326
-  maxHealth: 5
+  maxHealth: 400
   armor: 5
-  attackPower: 0
+  attackPower: 20
   criticalChance: 0
   criticalDamage: 100
   attackCooldown: 2
-  attackWindup: 0.2833333
+  attackWindup: 0.45
   attackRecovery: 0.2
   moveSpeed: 2
-  returnSpeed: 2
-  detectionRange: 3
+  returnSpeed: 2.3
+  detectionRange: 5
   attackRange: 1.2
   chaseDistanceLimit: 15
   physicalRadius: 0.2
@@ -38,5 +38,5 @@ MonoBehaviour:
   damageTextOffset: {x: 0, y: 0.5, z: 0}
   xpTextOffset: {x: 0, y: 0.5, z: 0}
   goldTextOffset: {x: 0, y: 0.25, z: 0}
-  expReward: 4
-  goldReward: 1
+  expReward: 20
+  goldReward: 10

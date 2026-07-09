@@ -14,10 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuestSO
   id: orc_patrol
   questName: Orc Patrol
-  description: Orcs have been spotted massing near the roads. Thin their numbers before they organize a raid.
+  description: Orcs have been spotted massing near the roads. Thin their numbers
+    before they organize a raid.
   objectiveType: 0
-  targetArchetype: {fileID: 11400000, guid: a82c41dc190d433dbefa03a194cc044f, type: 2}
-  requiredAmount: 8
+  targetArchetypes: []
+  requiredAmount: 1
   xpReward: 90
   goldReward: 40
   objectiveLabel: Kill Orcs

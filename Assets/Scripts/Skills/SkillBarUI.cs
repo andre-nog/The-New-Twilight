@@ -16,6 +16,7 @@ public class SkillBarUI : MonoBehaviour
     private ResourceManager resourceManager;
     private SkillBarSlot[] slots;
     private Image[] momentumSegments;
+    private GameObject newSkillIndicator;
 
     private Image healthFillImage;
     private TMP_Text healthBarText;
@@ -103,6 +104,9 @@ public class SkillBarUI : MonoBehaviour
         if (StatsManager.Instance != null)
             StatsManager.Instance.OnStatsChanged -= RefreshStatsDriven;
 
+        if (SkillProgression.Instance != null)
+            SkillProgression.Instance.OnProgressionChanged -= RefreshNewSkillIndicator;
+
         if (Instance == this)
             Instance = null;
     }
@@ -176,6 +180,7 @@ public class SkillBarUI : MonoBehaviour
         BuildMomentumBar();
         BuildVitalBars();
         BuildDebugStatsPanel();
+        BuildNewSkillIndicator();
 
         // Vida/mana/atributos só mudam quando OnStatsChanged dispara (dano, regen,
         // level up, equipar) — assinar o evento evita reler tudo a cada frame.
@@ -183,6 +188,44 @@ public class SkillBarUI : MonoBehaviour
             StatsManager.Instance.OnStatsChanged += RefreshStatsDriven;
 
         RefreshStatsDriven();
+    }
+
+    // Encontra o quadrado "+" (já baked na cena por SkillBarCanvasBuilder) e liga o
+    // clique + a visibilidade a SkillProgression — SkillProgression.EnsureCreated()
+    // já rodou em GameManager.Start() antes de SkillBarUI.EnsureCreated(), então
+    // Instance está garantido aqui.
+    private void BuildNewSkillIndicator()
+    {
+        Transform indicatorTransform = transform.Find("New Skill Indicator");
+
+        if (indicatorTransform == null)
+        {
+            Debug.LogWarning(
+                "SkillBarUI: 'New Skill Indicator' não encontrado na hierarquia — rode Tools > Skill Bar > Build Skill Bar Canvas.",
+                this);
+            return;
+        }
+
+        newSkillIndicator = indicatorTransform.gameObject;
+
+        if (indicatorTransform.TryGetComponent(out Button button))
+            button.onClick.AddListener(() => SkillBookUI.Instance?.Open());
+
+        if (SkillProgression.Instance != null)
+            SkillProgression.Instance.OnProgressionChanged += RefreshNewSkillIndicator;
+
+        RefreshNewSkillIndicator();
+    }
+
+    // Só aparece quando há ponto de skill pra gastar (subiu de nível e ainda não
+    // aprendeu/upou nada) — clicar abre o Livro pra escolher a skill nova.
+    private void RefreshNewSkillIndicator()
+    {
+        if (newSkillIndicator == null)
+            return;
+
+        bool hasPoint = SkillProgression.Instance != null && SkillProgression.Instance.AvailablePoints > 0;
+        newSkillIndicator.SetActive(hasPoint);
     }
 
     private void BuildMomentumBar()

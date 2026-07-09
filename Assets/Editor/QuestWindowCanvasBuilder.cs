@@ -99,12 +99,16 @@ public static class QuestWindowCanvasBuilder
         footerGroup.childForceExpandHeight = true;
 
         GameObject acceptButton = BuildFooterButton(footer, "Accept", QuestWindowButton.Kind.Accept);
+        // Rodapé, ao lado do Accept — escolha explícita "Accept ou Cancel" no
+        // modo Accept, em vez de só o "X" genérico do canto (que continua
+        // existindo pra fechar em qualquer modo).
+        GameObject declineButton = BuildFooterButton(footer, "Cancel", QuestWindowButton.Kind.Cancel);
         GameObject confirmButton = BuildFooterButton(footer, "Confirm", QuestWindowButton.Kind.Confirm);
 
         GameObject cancelButton = BuildCloseButton(panel);
 
         QuestWindow questWindow = canvasObject.AddComponent<QuestWindow>();
-        questWindow.Configure(canvasGroup, title, description, objective, reward, acceptButton, confirmButton, cancelButton);
+        questWindow.Configure(canvasGroup, title, description, objective, reward, acceptButton, declineButton, confirmButton, cancelButton);
 
         Selection.activeGameObject = canvasObject;
     }

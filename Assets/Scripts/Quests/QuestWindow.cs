@@ -22,6 +22,7 @@ public class QuestWindow : MonoBehaviour, ICancelable
     [SerializeField] private TMP_Text objectiveText;
     [SerializeField] private TMP_Text rewardText;
     [SerializeField] private GameObject acceptButton;
+    [SerializeField] private GameObject declineButton;
     [SerializeField] private GameObject confirmButton;
     [SerializeField] private GameObject cancelButton;
 
@@ -67,6 +68,7 @@ public class QuestWindow : MonoBehaviour, ICancelable
         TMP_Text objective,
         TMP_Text reward,
         GameObject accept,
+        GameObject decline,
         GameObject confirm,
         GameObject cancel)
     {
@@ -76,6 +78,7 @@ public class QuestWindow : MonoBehaviour, ICancelable
         objectiveText = objective;
         rewardText = reward;
         acceptButton = accept;
+        declineButton = decline;
         confirmButton = confirm;
         cancelButton = cancel;
     }
@@ -110,7 +113,7 @@ public class QuestWindow : MonoBehaviour, ICancelable
     }
 
     // Sem QuestSO — usado quando a NPC não tem quest disponível/pronta pra
-    // entregar (NotStarted/TurnedIn/sem quest atribuída).
+    // entregar (cadeia inteira entregue/TurnedIn, ou sem quest atribuída).
     public void OpenDialogue(string speakerName, string line)
     {
         currentQuest = null;
@@ -121,6 +124,7 @@ public class QuestWindow : MonoBehaviour, ICancelable
         rewardText.text = string.Empty;
 
         acceptButton.SetActive(false);
+        declineButton.SetActive(false);
         confirmButton.SetActive(false);
         cancelButton.SetActive(true);
 
@@ -140,6 +144,10 @@ public class QuestWindow : MonoBehaviour, ICancelable
         rewardText.text = $"Reward: {quest.xpReward} XP";
 
         acceptButton.SetActive(mode == Mode.Accept);
+        // Botão de rodapé, só no modo Accept — decisão explícita "Accept ou
+        // Cancel" lado a lado, além do "X" genérico do canto (cancelButton),
+        // que continua cobrindo "só fechar" em qualquer modo.
+        declineButton.SetActive(mode == Mode.Accept);
         confirmButton.SetActive(mode == Mode.Complete);
         cancelButton.SetActive(true);
 

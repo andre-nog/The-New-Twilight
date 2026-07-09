@@ -88,8 +88,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -424325989
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 1448252480329919801, guid: c57fa857f0a5bd04495248c41ed789c0, type: 3}
@@ -246,6 +246,8 @@ MonoBehaviour:
   enemyLayerMask:
     serializedVersion: 2
     m_Bits: 64
+  customCursor: {fileID: 0}
+  cursorHotspot: {x: 10, y: 10}
   currentTarget: {fileID: 0}
 --- !u!114 &2989374582786110942
 MonoBehaviour:
@@ -315,6 +317,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 512
   interactionDistance: 1.75
+  customCursor: {fileID: 0}
+  cursorHotspot: {x: 10, y: 10}
 --- !u!114 &210490869
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -325,5 +329,5 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9dbebd1721f961443b2984e3460d2d69, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpriteYSorter

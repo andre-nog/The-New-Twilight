@@ -475,8 +475,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -424325989
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1223559618023075008, guid: 9e5c88efdb4b5ec4ab8eabb56fc0ec72, type: 3}
@@ -641,7 +641,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e0dbd03ffa1cfe8df5d7391d3aa543a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_RangedBasicAttack
-  skillMultiplier: 1
   projectilePrefab: {fileID: 2871045519847331201, guid: e66c8fce7e342fea7923470bcbd379c9, type: 3}
   muzzle: {fileID: 9001000000000002}
   projectileSpeed: 12

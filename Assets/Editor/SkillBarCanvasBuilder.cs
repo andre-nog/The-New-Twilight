@@ -81,7 +81,43 @@ public static class SkillBarCanvasBuilder
         for (int i = 0; i < SlotCount; i++)
             BuildSlot(bar, (i + 1).ToString());
 
+        BuildNewSkillIndicator(canvasObject.transform, barWidth, barHeight, bar.anchoredPosition.y);
+
         Selection.activeGameObject = canvasObject;
+    }
+
+    // Quadrado do tamanho de um slot, encostado à direita da barra — some/aparece em
+    // runtime (SkillBarUI) conforme SkillProgression.AvailablePoints. Clicar abre o
+    // Livro de Skills pra gastar o ponto novo. Nasce inativo: SkillBarUI.Build() é
+    // quem decide a visibilidade inicial.
+    private static void BuildNewSkillIndicator(Transform parent, float barWidth, float barHeight, float barY)
+    {
+        RectTransform indicator = CreateUIObject("New Skill Indicator", parent);
+        indicator.anchorMin = new Vector2(0.5f, 0f);
+        indicator.anchorMax = new Vector2(0.5f, 0f);
+        indicator.pivot = new Vector2(0.5f, 0.5f);
+        indicator.anchoredPosition = new Vector2(
+            barWidth / 2f + BarSpacing + SlotSize / 2f,
+            barY + barHeight / 2f);
+        indicator.sizeDelta = new Vector2(SlotSize, SlotSize);
+
+        Image background = indicator.gameObject.AddComponent<Image>();
+        background.sprite = GetRuntimeSprite();
+        background.color = new Color(0.12f, 0.14f, 0.18f, 0.95f);
+
+        Outline outline = indicator.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0.4f, 0.9f, 0.45f, 0.9f);
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        Button button = indicator.gameObject.AddComponent<Button>();
+        button.targetGraphic = background;
+
+        TMP_Text plus = CreateText("Plus", indicator, "+", 44f, TextAlignmentOptions.Center);
+        SetStretch(plus.rectTransform, 0f);
+        plus.color = new Color(0.4f, 0.9f, 0.45f, 1f);
+        plus.raycastTarget = false;
+
+        indicator.gameObject.SetActive(false);
     }
 
     // Réplica do CreateSlot que SkillBarUI.cs tinha antes de virar código de

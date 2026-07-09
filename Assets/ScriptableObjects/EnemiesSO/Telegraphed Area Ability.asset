@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31bdb2abc20ff8341a9b9fcdcc94cd01, type: 3}
   m_Name: Telegraphed Area Ability
   m_EditorClassIdentifier: Assembly-CSharp::TelegraphedAreaAbility
-  abilityName: 
+  abilityName: Fireball
   cooldown: 3
   damage: 10
   windup: 1
-  travelTime: 0
+  travelTime: 0.3
   areaRadius: 1.5
   playerFeetOffset: {x: 0, y: -0.48}
   playerHitboxSize: {x: 0.3, y: 0.05}

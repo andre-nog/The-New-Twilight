@@ -59,6 +59,10 @@ public class PlayerSkillManager : MonoBehaviour
         // classe está disponível pra SkillProgression montar.
         SkillProgression.EnsureCreated();
 
+        // Loadout persiste o arranjo da barra entre respawns (ver SkillLoadout) — só
+        // não tem dado ainda na primeiríssima vez que a barra é montada na sessão.
+        SkillLoadout.EnsureCreated();
+
         // O kit vem da classe atual — o StatsManager é o dono da classe (roda antes,
         // DefaultExecutionOrder -100). Adicionar/trocar skill é editar o asset da
         // classe, não este código.
@@ -77,28 +81,61 @@ public class PlayerSkillManager : MonoBehaviour
 
         slots = new SkillSlot[count];
 
+        // Depois da primeira montagem, o loadout é a fonte de verdade (inclusive pra
+        // slots vazios) — sem isso, todo respawn recomputaria a partir de
+        // defaultSkills e perderia qualquer skill arrastada do Livro pra um slot fora
+        // do kit padrão.
+        bool useLoadout = SkillLoadout.Instance.Populated;
+
         for (int i = 0; i < count; i++)
         {
-            Skill skill = skills != null && i < skills.Count ? skills[i] : null;
+            Skill placed;
+            Sprite icon;
 
-            // Só posiciona na barra o que já está aprendido — no início do jogo isso é
-            // apenas o Auto Attack. Skills não-aprendidas deixam o slot vazio até o
-            // jogador aprendê-las e arrastá-las do Livro.
-            bool learned = skill != null
-                && SkillProgression.Instance != null
-                && SkillProgression.Instance.IsLearned(skill);
+            if (useLoadout)
+            {
+                placed = SkillLoadout.Instance.GetSkill(i);
+                icon = SkillLoadout.Instance.GetIcon(i);
+            }
+            else
+            {
+                Skill skill = skills != null && i < skills.Count ? skills[i] : null;
 
-            Skill placed = learned ? skill : null;
+                // Só posiciona na barra o que já está aprendido — no início do jogo isso
+                // é apenas o Auto Attack. Skills não-aprendidas deixam o slot vazio até
+                // o jogador aprendê-las e arrastá-las do Livro.
+                bool learned = skill != null
+                    && SkillProgression.Instance != null
+                    && SkillProgression.Instance.IsLearned(skill);
+
+                placed = learned ? skill : null;
+                icon = ResolveIcon(placed);
+            }
 
             slots[i] = new SkillSlot
             {
                 input = slotInputs[i],
                 skill = placed,
-                icon = ResolveIcon(placed),
+                icon = icon,
             };
         }
 
-        PlaceAutoLearnedSkills(currentClass);
+        if (!useLoadout)
+            PlaceAutoLearnedSkills(currentClass);
+
+        SyncLoadout();
+    }
+
+    // Grava o estado atual de todos os slots no loadout persistente — chamado depois
+    // de qualquer mudança (montagem inicial, drag-and-drop, swap) pra que o próximo
+    // respawn (nova instância de PlayerSkillManager) recupere o mesmo arranjo.
+    private void SyncLoadout()
+    {
+        if (SkillLoadout.Instance == null)
+            return;
+
+        for (int i = 0; i < slots.Length; i++)
+            SkillLoadout.Instance.Set(i, slots[i].skill, slots[i].icon);
     }
 
     // Skills autoLearnedAtStart (hoje só o Auto Attack) sempre aparecem na barra desde
@@ -174,6 +211,11 @@ public class PlayerSkillManager : MonoBehaviour
         // semear a barra (que só posiciona o que já está aprendido).
         if (SkillProgression.Instance != null)
             SkillProgression.Instance.RebuildRoster();
+
+        // Kit antigo (do loadout persistido) não faz mais sentido pra classe nova —
+        // força EnsureSlotsBuilt a re-derivar o layout inicial a partir dela.
+        if (SkillLoadout.Instance != null)
+            SkillLoadout.Instance.Clear();
 
         EnsureSlotsBuilt();
 
@@ -334,6 +376,8 @@ public class PlayerSkillManager : MonoBehaviour
         slots[index].icon = icon;
         slots[index].cooldown = carriedCooldown;
         slots[index].duration = carriedDuration;
+
+        SyncLoadout();
     }
 
     private void ClearSlot(int index)
@@ -356,5 +400,7 @@ public class PlayerSkillManager : MonoBehaviour
         (slots[indexA].icon, slots[indexB].icon) = (slots[indexB].icon, slots[indexA].icon);
         (slots[indexA].cooldown, slots[indexB].cooldown) = (slots[indexB].cooldown, slots[indexA].cooldown);
         (slots[indexA].duration, slots[indexB].duration) = (slots[indexB].duration, slots[indexA].duration);
+
+        SyncLoadout();
     }
 }

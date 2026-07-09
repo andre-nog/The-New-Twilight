@@ -14,22 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyArchetypeSO
   displayName: Goblin
   id: 1be2df8f95de40af8c9e48b15c61b326
-  maxHealth: 5
+  maxHealth: 350
   armor: 5
-  attackPower: 0
+  attackPower: 25
   criticalChance: 0
   criticalDamage: 100
   attackCooldown: 2
   attackWindup: 0.5
   attackRecovery: 0.2
   moveSpeed: 2
-  returnSpeed: 2
+  returnSpeed: 2.3
   detectionRange: 6
-  attackRange: 5
+  attackRange: 4
   chaseDistanceLimit: 15
   physicalRadius: 0.2
   physicalHeight: 0.2
-  defaultSprite: {fileID: 0}
+  defaultSprite: {fileID: -1223559618023075008, guid: 9e5c88efdb4b5ec4ab8eabb56fc0ec72, type: 3}
   animatorOverride: {fileID: 22100000, guid: bdbafc5508e07d14d98180811129f0d4, type: 2}
   attackSfx: {fileID: 0}
   hitSfx: {fileID: 0}
@@ -38,5 +38,5 @@ MonoBehaviour:
   damageTextOffset: {x: 0, y: 0.5, z: 0}
   xpTextOffset: {x: 0, y: 0.5, z: 0}
   goldTextOffset: {x: 0, y: 0.25, z: 0}
-  expReward: 4
-  goldReward: 1
+  expReward: 20
+  goldReward: 10

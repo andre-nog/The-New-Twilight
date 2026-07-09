@@ -144,7 +144,7 @@ public class QuestManager : MonoBehaviour
             if (quest == null || quest.objectiveType != QuestObjectiveType.KillEnemies)
                 continue;
 
-            if (quest.targetArchetype != archetype)
+            if (!TargetsArchetype(quest, archetype))
                 continue;
 
             QuestRuntime state = GetRuntime(quest);
@@ -159,6 +159,22 @@ public class QuestManager : MonoBehaviour
 
             OnQuestUpdated?.Invoke(quest);
         }
+    }
+
+    // Mais de um archetype pode contar pro mesmo objetivo (ex.: variante melee
+    // e ranged do "mesmo" inimigo, como Goblin) — ver QuestSO.targetArchetypes.
+    private static bool TargetsArchetype(QuestSO quest, EnemyArchetypeSO archetype)
+    {
+        if (quest.targetArchetypes == null)
+            return false;
+
+        foreach (EnemyArchetypeSO target in quest.targetArchetypes)
+        {
+            if (target == archetype)
+                return true;
+        }
+
+        return false;
     }
 
     private QuestSO FindQuestById(string id)

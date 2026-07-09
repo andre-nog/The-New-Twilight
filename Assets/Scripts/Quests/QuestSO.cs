@@ -18,8 +18,8 @@ public class QuestSO : ScriptableObject
 
     public QuestObjectiveType objectiveType = QuestObjectiveType.KillEnemies;
 
-    [Tooltip("Referência direta ao EnemyArchetypeSO alvo — antes era um texto que precisava bater com EnemyStats.DisplayName (frágil a rename/typo); agora é comparado por referência de asset, então nunca dessincroniza.")]
-    public EnemyArchetypeSO targetArchetype;
+    [Tooltip("Referência direta aos EnemyArchetypeSO alvo — comparado por referência de asset, nunca por texto/nome. Mais de um archetype conta pro mesmo objetivo (ex.: variante melee e ranged do \"mesmo\" inimigo).")]
+    public EnemyArchetypeSO[] targetArchetypes;
 
     public int requiredAmount = 10;
     public int xpReward = 200;
