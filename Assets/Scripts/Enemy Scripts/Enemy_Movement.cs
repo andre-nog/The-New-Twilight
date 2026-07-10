@@ -523,6 +523,8 @@ public class Enemy_Movement : MonoBehaviour
 
     public bool IsAttacking => enemyState == EnemyState.Attacking;
 
+    public bool IsAggroed => player != null;
+
     // Usado por outras habilidades (ex.: Enemy_Abilities) para forçar a pose parada
     // enquanto assumem o controle do inimigo temporariamente.
     public void SetIdlePose()

@@ -196,6 +196,14 @@ public class StatsManager : MonoBehaviour
         OnStatsChanged?.Invoke();
     }
 
+    public void ChangeMana(int amount)
+    {
+        currentMana += amount;
+        currentMana = Mathf.Clamp(currentMana, 0, MaxMana);
+
+        OnStatsChanged?.Invoke();
+    }
+
     public bool HasMana(int amount)
     {
         return currentMana >= amount;

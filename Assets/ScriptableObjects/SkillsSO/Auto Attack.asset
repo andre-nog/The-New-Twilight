@@ -19,20 +19,16 @@ MonoBehaviour:
   autoLearnedAtStart: 1
   levels:
   - requiredPlayerLevel: 1
-    damageMultiplier: 0.9
-    manaCost: 0
-    resourceGenerated: 1
-  - requiredPlayerLevel: 1
     damageMultiplier: 1
     manaCost: 0
     resourceGenerated: 1
-  - requiredPlayerLevel: 1
-    damageMultiplier: 1.1
-    manaCost: 0
-    resourceGenerated: 1
   id: 7183a25b24d72ae4997d69588a61c1a6
+  preferredDefaultSlot: 1
   requiresTarget: 1
   lockMovementDuringCast: 1
+  executeEffectImmediately: 0
+  followTargetWhileOnCooldown: 1
+  requiresOutOfCombat: 0
   cooldown: 1.5
   range: 1.2
   damageMultiplier: 1
@@ -44,3 +40,4 @@ MonoBehaviour:
   hitVFX: {fileID: 0}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: AutoAttack
+  maxCastDuration: 3

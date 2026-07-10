@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Player_Combat : MonoBehaviour
@@ -8,6 +9,14 @@ public class Player_Combat : MonoBehaviour
     public PlayerMovement playerMovement;
     public PlayerInteraction playerInteraction;
     public ResourceManager ResourceManager => resourceManager;
+
+    // Fired when the player tries to cast another skill while isAttacking is true
+    // (PlayerSkillManager queues it instead of casting immediately) — channel-type
+    // skills like Recovery subscribe to this to cancel themselves instead of just
+    // silently blocking the input.
+    public event Action OnCastAttemptedDuringAction;
+
+    public void NotifyCastAttempted() => OnCastAttemptedDuringAction?.Invoke();
 
     // Contexto do cast em andamento — escrito UMA vez por tentativa de cast
     // (UseSkill) e lido pelos animation events. Substitui o trio mutável
@@ -129,10 +138,14 @@ public class Player_Combat : MonoBehaviour
             playerMovement.SetMovementLocked(true);
         }
 
-        anim.SetTrigger(skill.animationTrigger);
+        if (!string.IsNullOrEmpty(skill.animationTrigger))
+            anim.SetTrigger(skill.animationTrigger);
 
         int myGeneration = ++castGeneration;
         StartCoroutine(AttackTimeoutWatchdog(myGeneration, skill.maxCastDuration));
+
+        if (skill.executeEffectImmediately)
+            ExecuteSkillEffect();
     }
 
     // Failsafe for a missing/misnamed animation event: without this, a broken
@@ -190,6 +203,9 @@ public class Player_Combat : MonoBehaviour
         {
             CancelMoveToAttack();
         }
+
+        if (skill.requiresOutOfCombat && CombatStateTracker.Instance != null && CombatStateTracker.Instance.IsInCombat)
+            return;
 
         // Verifica se há recurso suficiente. resourceCost/range são fixos (Skill);
         // manaCost varia por nível (SkillLevelData).

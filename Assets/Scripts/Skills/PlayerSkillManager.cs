@@ -63,6 +63,10 @@ public class PlayerSkillManager : MonoBehaviour
         // não tem dado ainda na primeiríssima vez que a barra é montada na sessão.
         SkillLoadout.EnsureCreated();
 
+        // Precisa existir antes de qualquer skill ser castada — UseSkill consulta
+        // CombatStateTracker.Instance pra skills com requiresOutOfCombat.
+        CombatStateTracker.EnsureCreated();
+
         // O kit vem da classe atual — o StatsManager é o dono da classe (roda antes,
         // DefaultExecutionOrder -100). Adicionar/trocar skill é editar o asset da
         // classe, não este código.
@@ -178,8 +182,31 @@ public class PlayerSkillManager : MonoBehaviour
             if (alreadyPlaced)
                 continue;
 
-            slots[0].skill = skill;
-            slots[0].icon = ResolveIcon(skill);
+            int targetIndex = skill.preferredDefaultSlot >= 0 && skill.preferredDefaultSlot < slots.Length
+                ? skill.preferredDefaultSlot
+                : 0;
+
+            // Preferred slot already taken by another auto-learned skill — fall back
+            // to the first empty slot instead of silently overwriting it.
+            if (slots[targetIndex].skill != null)
+            {
+                targetIndex = -1;
+
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    if (slots[i].skill == null)
+                    {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+
+                if (targetIndex < 0)
+                    continue;
+            }
+
+            slots[targetIndex].skill = skill;
+            slots[targetIndex].icon = ResolveIcon(skill);
         }
     }
 
@@ -232,14 +259,47 @@ public class PlayerSkillManager : MonoBehaviour
 
         foreach (SkillSlot slot in slots)
             slot.input.action.Enable();
+
+        if (SkillProgression.Instance != null)
+            SkillProgression.Instance.OnSkillLearned += HandleSkillLearned;
     }
 
     private void OnDisable()
     {
+        if (SkillProgression.Instance != null)
+            SkillProgression.Instance.OnSkillLearned -= HandleSkillLearned;
+
         foreach (SkillSlot slot in slots)
             slot.input.action.Disable();
 
         queuedSkill = null;
+    }
+
+    // Convenience default, not a lock: places a newly learned skill into its
+    // preferred slot (Skill.preferredDefaultSlot) if that slot is still empty.
+    // Skipped silently if the skill has no preference, is already placed
+    // somewhere, or its preferred slot is taken — drag-and-drop still works
+    // exactly as before either way.
+    private void HandleSkillLearned(Skill skill)
+    {
+        if (skill == null || skill.preferredDefaultSlot < 0 || skill.preferredDefaultSlot >= slots.Length)
+            return;
+
+        if (FindSlot(skill) != null)
+            return;
+
+        SkillSlot target = slots[skill.preferredDefaultSlot];
+
+        if (target.skill != null)
+            return;
+
+        target.skill = skill;
+        target.icon = ResolveIcon(skill);
+
+        SyncLoadout();
+
+        if (SkillBarUI.Instance != null)
+            SkillBarUI.Instance.RefreshAll();
     }
 
     private void Update()
@@ -278,6 +338,7 @@ public class PlayerSkillManager : MonoBehaviour
         if (combat.isAttacking)
         {
             queuedSkill = skill; // guarda a intenção mais recente, sobrescrevendo qualquer fila anterior
+            combat.NotifyCastAttempted();
             return;
         }
 

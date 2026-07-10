@@ -16,6 +16,7 @@ public static class SkillBookCanvasBuilder
     private const float GridPadding = 16f;
     private const float TitleBarHeight = 38f;
     private const int Columns = 3;
+    private const int Rows = 2;
     private const string CanvasName = "Skill Book Canvas";
 
     private static readonly Color OutlineColor = new(0.55f, 0.6f, 0.7f, 0.9f);
@@ -34,6 +35,7 @@ public static class SkillBookCanvasBuilder
         "Auto Attack",
         "Power Strike",
         "Stomp",
+        "Recovery",
     };
 
     [MenuItem("Tools/Skill Book/Build Skill Book Canvas")]
@@ -68,7 +70,7 @@ public static class SkillBookCanvasBuilder
         skillBookUI.canvasGroup = canvasGroup;
 
         float panelWidth = Columns * SlotSize + (Columns - 1) * GridSpacing + GridPadding * 2f;
-        float gridHeight = SlotSize + GridPadding * 2f;
+        float gridHeight = Rows * SlotSize + (Rows - 1) * GridSpacing + GridPadding * 2f;
         float panelHeight = TitleBarHeight + gridHeight;
 
         RectTransform panel = CreateUIObject("Skill Book Panel", canvasObject.transform);
@@ -116,15 +118,26 @@ public static class SkillBookCanvasBuilder
         layout.constraintCount = Columns;
 
         List<SkillBookSlot> bookSlots = new();
+        int totalSlots = Columns * Rows;
 
-        foreach (string skillName in SkillNames)
+        for (int i = 0; i < totalSlots; i++)
         {
-            Skill skill = FindSkillByName(skillName);
+            if (i < SkillNames.Length)
+            {
+                string skillName = SkillNames[i];
+                Skill skill = FindSkillByName(skillName);
 
-            if (skill == null)
-                Debug.LogWarning($"SkillBookCanvasBuilder: nenhum asset de Skill encontrado com skillName \"{skillName}\".");
+                if (skill == null)
+                    Debug.LogWarning($"SkillBookCanvasBuilder: nenhum asset de Skill encontrado com skillName \"{skillName}\".");
 
-            bookSlots.Add(BuildSlot(grid, skill, skillName));
+                bookSlots.Add(BuildSlot(grid, skill, skillName));
+            }
+            else
+            {
+                // Reserved for a future skill — renders as a locked/empty slot
+                // via the same "no skill assigned" path SkillBookSlot already handles.
+                bookSlots.Add(BuildSlot(grid, null, string.Empty));
+            }
         }
 
         TMP_Text pointsText = BuildPointsLabel(panel);

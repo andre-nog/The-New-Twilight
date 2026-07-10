@@ -9,6 +9,10 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     // em vez de continuar perseguindo/atacando um alvo "morto" até o respawn.
     public static event Action OnPlayerDied;
 
+    // Disparado sempre que um inimigo acerta um golpe no player (independente do dano
+    // final) — usado por skills de canal (ex.: Recovery) pra cancelar ao tomar dano.
+    public static event Action OnPlayerDamaged;
+
     public float respawnDelay = 3f;
 
     private bool isDead;
@@ -85,6 +89,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     public void TakeDamage(DamageResult result)
     {
+        OnPlayerDamaged?.Invoke();
+
         StatsManager.Instance.ChangeHealth(-result.FinalDamage);
 
         // Laranja-avermelhado no crítico de inimigo, pra diferenciar do hit normal.

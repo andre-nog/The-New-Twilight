@@ -25,6 +25,7 @@ MonoBehaviour:
   learnableSkills:
   - {fileID: 11400000, guid: 1e52f75bacf5992419babbc15eb60b40, type: 2}
   - {fileID: 11400000, guid: 646f9851ecc2b6845a7a45b8be6412d3, type: 2}
+  - {fileID: 11400000, guid: f6ddfec03ff0174ca314aea59e7b6eb4, type: 2}
   passives:
   - {fileID: 11400000, guid: 9476d912891d69e42ab076783cc8bf21, type: 2}
   resourceName: Momentum

@@ -29,9 +29,13 @@ public class Enemy_Health : MonoBehaviour, IDamageable
     public float Armor => stats.Armor;
     public bool IsAlive => currentHealth > 0;
 
+    // Cacheado uma vez em vez de GetComponent a cada poll do CombatStateTracker.
+    public Enemy_Movement Movement { get; private set; }
+
     private void Awake()
     {
         stats = GetComponent<EnemyStats>();
+        Movement = GetComponent<Enemy_Movement>();
         healthSlider = GetComponentInChildren<Slider>();
     }
 

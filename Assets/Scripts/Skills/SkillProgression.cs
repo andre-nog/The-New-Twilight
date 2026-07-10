@@ -17,6 +17,10 @@ public class SkillProgression : MonoBehaviour
 
     public event Action OnProgressionChanged;
 
+    // Fired once, the moment a skill goes from level 0 to level 1 — PlayerSkillManager
+    // listens to auto-place it into Skill.preferredDefaultSlot (e.g. Recovery -> slot 9).
+    public event Action<Skill> OnSkillLearned;
+
     // skill -> nível atual (0 = não aprendida). Só skills do roster entram aqui.
     private readonly Dictionary<Skill, int> levels = new();
 
@@ -177,8 +181,14 @@ public class SkillProgression : MonoBehaviour
         if (!CanLearnOrUpgrade(skill))
             return false;
 
+        bool firstTimeLearned = GetLevel(skill) == 0;
+
         levels[skill] = GetLevel(skill) + 1;
         OnProgressionChanged?.Invoke();
+
+        if (firstTimeLearned)
+            OnSkillLearned?.Invoke(skill);
+
         return true;
     }
 

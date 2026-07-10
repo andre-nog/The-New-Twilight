@@ -71,12 +71,22 @@ public abstract class Skill : ScriptableObject
     }
 #endif
 
+    [Header("Slot")]
+    [Tooltip("Preferred hotbar slot (0-based) to auto-place this skill into the first time it's learned, if that slot is empty. -1 = no preference. The player can always drag it to a different slot afterward.")]
+    public int preferredDefaultSlot = -1;
+
     [Header("Gameplay")]
     public bool requiresTarget = true;
     public bool lockMovementDuringCast = false;
 
+    [Tooltip("If checked, ExecuteEffect runs immediately when the cast commits instead of waiting for the ExecuteSkillEffect Animation Event mid-clip. For skills with no swing animation to sync to, e.g. a channel that outlives any attack clip.")]
+    public bool executeEffectImmediately = false;
+
     [Tooltip("Se em cooldown quando usada, o jogador se aproxima e segura posição perto do alvo até o cooldown acabar, castando automaticamente assim que possível — em vez de ignorar o input. Desmarque para skills que não devem perseguir enquanto recarregam.")]
     public bool followTargetWhileOnCooldown = true;
+
+    [Tooltip("If checked, this skill can only be cast while the player is out of combat (see CombatStateTracker).")]
+    public bool requiresOutOfCombat = false;
     public float cooldown;
     public float range;
     public float damageMultiplier = 1f;
