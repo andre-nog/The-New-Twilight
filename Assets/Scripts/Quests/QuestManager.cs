@@ -2,11 +2,22 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+// DTO de save deste manager — ver ISaveParticipant/SaveSystem.
+[Serializable]
+public class QuestsSave
+{
+    public List<QuestSave> quests = new();
+}
+
 // Fonte única de verdade pro estado de quests em runtime. Segue o mesmo
 // convencionamento de singleton usado por InventoryManager/EquipmentManager
 // (Instance simples, sem DontDestroyOnLoad — só GameManager persiste entre cenas).
-public class QuestManager : MonoBehaviour
+public class QuestManager : MonoBehaviour, ISaveParticipant
 {
+    public string SaveKey => "quests";
+    public int SchemaVersion => 1;
+    public int Order => 0;
+
     public static QuestManager Instance;
 
     // Estático pra UI (indicador da NPC, tracker) poder se inscrever em OnEnable
@@ -39,6 +50,7 @@ public class QuestManager : MonoBehaviour
         }
 
         Instance = this;
+        SaveRegistry.Register(this);
     }
 
     private void Start()
@@ -68,6 +80,8 @@ public class QuestManager : MonoBehaviour
     {
         if (Instance == this)
             Instance = null;
+
+        SaveRegistry.Unregister(this);
     }
 
     private QuestRuntime GetRuntime(QuestSO quest)
@@ -188,34 +202,14 @@ public class QuestManager : MonoBehaviour
         return null;
     }
 
-    public List<QuestSave> GetState()
+    // Novo Jogo = todo quest volta pro estado seed (Available/0). Chamado só pelo
+    // SaveSystem — equivalente a RestoreState com uma lista vazia.
+    public void InitializeNewGame()
     {
-        List<QuestSave> result = new();
-
-        foreach (QuestSO quest in allQuests)
-        {
-            if (quest == null)
-                continue;
-
-            QuestRuntime state = GetRuntime(quest);
-
-            result.Add(new QuestSave
-            {
-                questId = quest.id,
-                state = state.state.ToString(),
-                progress = state.progress
-            });
-        }
-
-        result.AddRange(unresolvedQuests);
-
-        return result;
+        ResetToSeed();
     }
 
-    // Reconstrói do zero a partir do save — todo quest não presente na lista
-    // volta pro estado seed (Available/0), igual InventoryManager.ApplyState
-    // limpa slots não presentes.
-    public void ApplyState(List<QuestSave> state)
+    private void ResetToSeed()
     {
         runtime.Clear();
         unresolvedQuests.Clear();
@@ -226,26 +220,66 @@ public class QuestManager : MonoBehaviour
                 runtime[quest.id] = new QuestRuntime { state = QuestState.Available, progress = 0 };
         }
 
-        if (state != null)
+        foreach (QuestSO quest in allQuests)
         {
-            foreach (QuestSave saved in state)
-            {
-                if (runtime.TryGetValue(saved.questId, out QuestRuntime questState))
-                {
-                    // Estado inválido/desconhecido (save corrompido ou editado à mão)
-                    // fica no seed Available em vez de corromper o runtime — nunca crasha.
-                    if (Enum.TryParse(saved.state, out QuestState parsedState))
-                        questState.state = parsedState;
-                    else
-                        Debug.LogWarning($"QuestManager: estado '{saved.state}' inválido pra quest '{saved.questId}' — mantendo Available.");
+            if (quest != null)
+                OnQuestUpdated?.Invoke(quest);
+        }
+    }
 
-                    questState.progress = saved.progress;
-                }
+    public string CaptureState()
+    {
+        List<QuestSave> quests = new();
+
+        foreach (QuestSO quest in allQuests)
+        {
+            if (quest == null)
+                continue;
+
+            QuestRuntime state = GetRuntime(quest);
+
+            quests.Add(new QuestSave
+            {
+                questId = quest.id,
+                state = state.state.ToString(),
+                progress = state.progress
+            });
+        }
+
+        quests.AddRange(unresolvedQuests);
+
+        return JsonUtility.ToJson(new QuestsSave { quests = quests });
+    }
+
+    // Reconstrói do zero a partir do save — todo quest não presente na lista
+    // volta pro estado seed (Available/0), igual InventoryManager.RestoreState
+    // limpa slots não presentes.
+    public void RestoreState(string json, int schemaVersion)
+    {
+        ResetToSeed();
+
+        QuestsSave save = JsonUtility.FromJson<QuestsSave>(json);
+
+        if (save?.quests == null)
+            return;
+
+        foreach (QuestSave saved in save.quests)
+        {
+            if (runtime.TryGetValue(saved.questId, out QuestRuntime questState))
+            {
+                // Estado inválido/desconhecido (save corrompido ou editado à mão)
+                // fica no seed Available em vez de corromper o runtime — nunca crasha.
+                if (Enum.TryParse(saved.state, out QuestState parsedState))
+                    questState.state = parsedState;
                 else
-                {
-                    Debug.LogWarning($"QuestManager: questId '{saved.questId}' não encontrado em allQuests — preservado cru em vez de descartado.");
-                    unresolvedQuests.Add(saved);
-                }
+                    Debug.LogWarning($"QuestManager: estado '{saved.state}' inválido pra quest '{saved.questId}' — mantendo Available.");
+
+                questState.progress = saved.progress;
+            }
+            else
+            {
+                Debug.LogWarning($"QuestManager: questId '{saved.questId}' não encontrado em allQuests — preservado cru em vez de descartado.");
+                unresolvedQuests.Add(saved);
             }
         }
 

@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RecoverySkill
   skillName: Recovery
   skillType: 1
-  icon: {fileID: 0}
+  icon: {fileID: 8793915729297761979, guid: 11d365d24c18e1543b37e6c29b18058c, type: 3}
   description: Stand still and channel, gradually restoring Health and Mana to full.
   autoLearnedAtStart: 1
   levels: []
-  id: 
+  id: f6ddfec03ff0174ca314aea59e7b6eb4
   preferredDefaultSlot: 8
   requiresTarget: 0
   lockMovementDuringCast: 1

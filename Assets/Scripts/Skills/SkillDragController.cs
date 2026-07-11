@@ -121,7 +121,7 @@ public class SkillDragController : MonoBehaviour
             case SkillBookSlot bookSource when target is SkillBarSlot barTarget:
                 // RefreshAll (não só o destino): atribuir pode ter esvaziado outro slot
                 // que já tinha essa skill.
-                manager.SetSkillAt(barTarget.SlotIndex, bookSource.Skill, bookSource.IconSprite);
+                manager.SetSkillAt(barTarget.SlotIndex, bookSource.Skill);
                 SkillBarUI.Instance.RefreshAll();
                 break;
 
@@ -155,7 +155,7 @@ public class SkillDragController : MonoBehaviour
 
                 if (manager != null)
                 {
-                    manager.SetSkillAt(barSource.SlotIndex, null, null);
+                    manager.SetSkillAt(barSource.SlotIndex, null);
                     SkillBarUI.Instance.RefreshSlot(barSource.SlotIndex);
                 }
             }

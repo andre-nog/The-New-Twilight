@@ -8,7 +8,7 @@ using UnityEngine;
 // então SaveData é só uma árvore de DTOs simples.
 public static class SaveService
 {
-    private const int CurrentVersion = 2;
+    private const int CurrentVersion = 3;
 
     // 3 slots manuais numerados + 1 autosave, dedicados — nunca se sobrescrevem entre
     // si. "Debug" é só pro atalho de quicksave/quickload do Editor (GameManager F5/F9),

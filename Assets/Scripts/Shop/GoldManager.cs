@@ -2,11 +2,22 @@ using System;
 using System.Collections;
 using UnityEngine;
 
+// DTO de save deste manager — ver ISaveParticipant/SaveSystem.
+[Serializable]
+public class GoldSave
+{
+    public int gold;
+}
+
 // Fonte única de verdade pro ouro do jogador em runtime. Mesmo convencionamento
 // de singleton usado por QuestManager/InventoryManager (Instance simples, sem
 // DontDestroyOnLoad — só GameManager persiste entre cenas).
-public class GoldManager : MonoBehaviour
+public class GoldManager : MonoBehaviour, ISaveParticipant
 {
+    public string SaveKey => "gold";
+    public int SchemaVersion => 1;
+    public int Order => 0;
+
     public static GoldManager Instance;
 
     // Estático pra UI (display de ouro, janela da loja) poder se inscrever em
@@ -37,6 +48,7 @@ public class GoldManager : MonoBehaviour
         }
 
         Instance = this;
+        SaveRegistry.Register(this);
     }
 
     private void OnEnable()
@@ -67,16 +79,20 @@ public class GoldManager : MonoBehaviour
             DamageManager.Instance.CreateRewardPopup(position + offset, $"+{gold}g", GoldPopupColor);
     }
 
-    private void Start()
-    {
-        CurrentGold = startingGold;
-        OnGoldChanged?.Invoke(CurrentGold);
-    }
-
     private void OnDestroy()
     {
         if (Instance == this)
             Instance = null;
+
+        SaveRegistry.Unregister(this);
+    }
+
+    // Chamado só pelo SaveSystem, só em Novo Jogo — nunca em Start(), pra não
+    // competir de ordem com RestoreState (ver ISaveParticipant).
+    public void InitializeNewGame()
+    {
+        CurrentGold = startingGold;
+        OnGoldChanged?.Invoke(CurrentGold);
     }
 
     public bool SpendGold(int amount)
@@ -101,16 +117,16 @@ public class GoldManager : MonoBehaviour
         OnGoldChanged?.Invoke(CurrentGold);
     }
 
-    public int GetState()
+    public string CaptureState()
     {
-        return CurrentGold;
+        return JsonUtility.ToJson(new GoldSave { gold = CurrentGold });
     }
 
-    // Chamado pelo GameManager.LoadGame — reaplica o valor salvo por cima do
-    // startingGold já setado em Start.
-    public void ApplyState(int gold)
+    public void RestoreState(string json, int schemaVersion)
     {
-        CurrentGold = Mathf.Max(0, gold);
+        GoldSave save = JsonUtility.FromJson<GoldSave>(json);
+
+        CurrentGold = Mathf.Max(0, save != null ? save.gold : 0);
         OnGoldChanged?.Invoke(CurrentGold);
     }
 }

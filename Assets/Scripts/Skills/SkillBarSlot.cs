@@ -60,12 +60,10 @@ public class SkillBarSlot : MonoBehaviour,
 
         Skill skill = skillManager != null ? skillManager.GetSkillAt(SlotIndex) : null;
 
-        // Ícone vem do slot (carregado do Livro no drag); cai pra Skill.icon se o slot
-        // não tem um sprite próprio.
-        Sprite iconSprite = skillManager != null ? skillManager.GetIconAt(SlotIndex) : null;
-        if (iconSprite == null && skill != null)
-            iconSprite = skill.icon;
-
+        // Sempre lido direto de Skill.icon — nunca cacheado à parte, pra mudar o
+        // sprite no asset já refletir aqui no próximo Refresh() sem precisar de
+        // drag-and-drop ou reiniciar o Play Mode.
+        Sprite iconSprite = skill != null ? skill.icon : null;
         bool hasIcon = iconSprite != null;
 
         icon.sprite = hasIcon ? iconSprite : SkillBarUI.GetRuntimeSprite();

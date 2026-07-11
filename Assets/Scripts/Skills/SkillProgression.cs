@@ -2,6 +2,21 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+// DTO de save deste manager — ver ISaveParticipant/SaveSystem. skillId vem de
+// Skill.Id (guid estável do asset).
+[Serializable]
+public class SkillProgressionSave
+{
+    public List<SkillLevelEntry> entries = new();
+}
+
+[Serializable]
+public class SkillLevelEntry
+{
+    public string skillId;
+    public int level;
+}
+
 // Estado de progressão de skills do jogador: qual nível cada skill está e quantos
 // pontos há pra gastar. Singleton persistente criado em runtime (mesmo padrão de
 // SkillBarUI/SkillDragController.EnsureCreated) — vive num GameObject próprio com
@@ -11,8 +26,12 @@ using UnityEngine;
 // O roster (quais skills existem pra aprender) vem de
 // StatsManager.CurrentClass.learnableSkills, então trocar de classe troca o leque
 // de skills junto — sem re-wiring no Inspector.
-public class SkillProgression : MonoBehaviour
+public class SkillProgression : MonoBehaviour, ISaveParticipant
 {
+    public string SaveKey => "skills.progression";
+    public int SchemaVersion => 1;
+    public int Order => 0;
+
     public static SkillProgression Instance { get; private set; }
 
     public event Action OnProgressionChanged;
@@ -48,6 +67,8 @@ public class SkillProgression : MonoBehaviour
 
         if (StatsManager.Instance != null)
             StatsManager.Instance.OnLevelChanged += HandleLevelUp;
+
+        SaveRegistry.Register(this);
     }
 
     private void OnDestroy()
@@ -57,6 +78,8 @@ public class SkillProgression : MonoBehaviour
 
         if (Instance == this)
             Instance = null;
+
+        SaveRegistry.Unregister(this);
     }
 
     // Popula o dicionário a partir do roster da classe atual. Skills autoLearnedAtStart
@@ -204,5 +227,95 @@ public class SkillProgression : MonoBehaviour
             return null;
 
         return Instance != null ? Instance.GetActiveData(skill) : skill.GetLevelData(1);
+    }
+
+    // Resolve uma skill por Id dentro do roster da classe atual (defaultSkills +
+    // learnableSkills, mesma união de BuildRoster) — usado tanto por RestoreState
+    // aqui quanto por SkillLoadout.RestoreState, que precisa do mesmo lookup pra
+    // reconstruir o arranjo da barra a partir de ids salvos.
+    public static Skill FindSkillById(string skillId)
+    {
+        if (string.IsNullOrEmpty(skillId))
+            return null;
+
+        ClassDefinitionSO currentClass = StatsManager.Instance != null ? StatsManager.Instance.CurrentClass : null;
+
+        if (currentClass == null)
+            return null;
+
+        return FindInList(currentClass.defaultSkills, skillId) ?? FindInList(currentClass.learnableSkills, skillId);
+    }
+
+    private static Skill FindInList(List<Skill> skills, string skillId)
+    {
+        if (skills == null)
+            return null;
+
+        foreach (Skill skill in skills)
+        {
+            if (skill != null && skill.Id == skillId)
+                return skill;
+        }
+
+        return null;
+    }
+
+    // Novo Jogo = roster do zero a partir da classe atual (mesma derivação de
+    // BuildRoster). Chamado só pelo SaveSystem.
+    public void InitializeNewGame()
+    {
+        BuildRoster();
+        OnProgressionChanged?.Invoke();
+    }
+
+    public string CaptureState()
+    {
+        List<SkillLevelEntry> entries = new();
+
+        foreach (KeyValuePair<Skill, int> entry in levels)
+        {
+            if (entry.Key == null)
+                continue;
+
+            if (string.IsNullOrEmpty(entry.Key.Id))
+            {
+                Debug.LogWarning($"SkillProgression: skill '{entry.Key.skillName}' tem Id vazio — não será salva. Reimporte o asset ou abra-o no Inspector pra gerar o id.");
+                continue;
+            }
+
+            entries.Add(new SkillLevelEntry { skillId = entry.Key.Id, level = entry.Value });
+        }
+
+        return JsonUtility.ToJson(new SkillProgressionSave { entries = entries });
+    }
+
+    // Reconstrói o roster da classe atual (igual Novo Jogo) e sobrepõe os níveis
+    // salvos — skill id que não existe mais no roster da classe atual é descartada
+    // com aviso (sem lista de "não resolvidos": ao contrário de itens/quests, uma
+    // skill fora do roster da classe atual não tem como voltar a fazer sentido
+    // depois, então preservar o dado cru não ajudaria).
+    public void RestoreState(string json, int schemaVersion)
+    {
+        BuildRoster();
+
+        SkillProgressionSave save = JsonUtility.FromJson<SkillProgressionSave>(json);
+
+        if (save?.entries != null)
+        {
+            foreach (SkillLevelEntry saved in save.entries)
+            {
+                Skill skill = FindSkillById(saved.skillId);
+
+                if (skill == null)
+                {
+                    Debug.LogWarning($"SkillProgression: skillId '{saved.skillId}' não encontrado no roster da classe atual — descartado.");
+                    continue;
+                }
+
+                levels[skill] = saved.level;
+            }
+        }
+
+        OnProgressionChanged?.Invoke();
     }
 }

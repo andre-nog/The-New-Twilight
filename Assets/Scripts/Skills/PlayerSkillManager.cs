@@ -12,11 +12,6 @@ public class PlayerSkillManager : MonoBehaviour
     {
         public InputActionReference input;
         public Skill skill;
-
-        // Ícone exibido na barra. Para o kit da classe é Skill.icon; para skills
-        // arrastadas do Livro é o sprite do slot de origem (SkillBookSlot.IconSprite),
-        // que pode diferir de Skill.icon.
-        public Sprite icon;
         public float cooldown;
 
         // Duração efetiva do cooldown que acabou de começar (já com Haste aplicado,
@@ -94,12 +89,10 @@ public class PlayerSkillManager : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             Skill placed;
-            Sprite icon;
 
             if (useLoadout)
             {
                 placed = SkillLoadout.Instance.GetSkill(i);
-                icon = SkillLoadout.Instance.GetIcon(i);
             }
             else
             {
@@ -113,14 +106,12 @@ public class PlayerSkillManager : MonoBehaviour
                     && SkillProgression.Instance.IsLearned(skill);
 
                 placed = learned ? skill : null;
-                icon = ResolveIcon(placed);
             }
 
             slots[i] = new SkillSlot
             {
                 input = slotInputs[i],
                 skill = placed,
-                icon = icon,
             };
         }
 
@@ -139,7 +130,7 @@ public class PlayerSkillManager : MonoBehaviour
             return;
 
         for (int i = 0; i < slots.Length; i++)
-            SkillLoadout.Instance.Set(i, slots[i].skill, slots[i].icon);
+            SkillLoadout.Instance.Set(i, slots[i].skill);
     }
 
     // Skills autoLearnedAtStart (hoje só o Auto Attack) sempre aparecem na barra desde
@@ -206,19 +197,7 @@ public class PlayerSkillManager : MonoBehaviour
             }
 
             slots[targetIndex].skill = skill;
-            slots[targetIndex].icon = ResolveIcon(skill);
         }
-    }
-
-    // Ícone efetivo pra mostrar na barra: o mesmo sprite exibido no slot desta skill
-    // no Livro (pode ter sido customizado no Inspector), com Skill.icon como fallback.
-    private static Sprite ResolveIcon(Skill skill)
-    {
-        if (skill == null)
-            return null;
-
-        Sprite bookIcon = SkillBookUI.Instance != null ? SkillBookUI.Instance.GetIconFor(skill) : null;
-        return bookIcon != null ? bookIcon : skill.icon;
     }
 
     // Hook da promoção de classe: depois de StatsManager.SetClass, chame isto para
@@ -294,7 +273,6 @@ public class PlayerSkillManager : MonoBehaviour
             return;
 
         target.skill = skill;
-        target.icon = ResolveIcon(skill);
 
         SyncLoadout();
 
@@ -392,16 +370,29 @@ public class PlayerSkillManager : MonoBehaviour
         slot.duration = duration;
     }
 
+    // Reflete o conteúdo atual de SkillLoadout nos slots AO VIVO desta barra, sem
+    // recomputar nada a partir da classe (ao contrário de RebuildLoadout, que
+    // reconstrói do zero) — chamado pelo SaveSystem depois que SkillLoadout.
+    // RestoreState já atualizou o singleton, pra UI e slots convergirem com o save.
+    public void ResyncFromLoadout()
+    {
+        EnsureSlotsBuilt();
+
+        if (SkillLoadout.Instance == null)
+            return;
+
+        for (int i = 0; i < slots.Length; i++)
+            slots[i].skill = SkillLoadout.Instance.GetSkill(i);
+
+        if (SkillBarUI.Instance != null)
+            SkillBarUI.Instance.RefreshAll();
+    }
+
     public int SlotCount => slots.Length;
 
     public Skill GetSkillAt(int index)
     {
         return index >= 0 && index < slots.Length ? slots[index].skill : null;
-    }
-
-    public Sprite GetIconAt(int index)
-    {
-        return index >= 0 && index < slots.Length ? slots[index].icon : null;
     }
 
     // Permite castar um slot por índice sem passar pelo InputAction — usado pelo
@@ -415,15 +406,16 @@ public class PlayerSkillManager : MonoBehaviour
         TryCastOrQueue(slots[index].skill);
     }
 
-    // Atribui uma skill (com seu ícone) a um slot, sobrescrevendo o que estava lá —
-    // usado pelo drag do Livro de Skills pra barra, e com skill=null pra esvaziar um
-    // slot (drop fora da barra). A skill entra "fresca" (sem cooldown pendente de quem
-    // ocupava o slot antes).
+    // Atribui uma skill a um slot, sobrescrevendo o que estava lá — usado pelo drag
+    // do Livro de Skills pra barra, e com skill=null pra esvaziar um slot (drop fora
+    // da barra). O ícone nunca é guardado à parte — vem sempre de Skill.icon, lido
+    // direto na hora de exibir (ver SkillBarSlot.Refresh). A skill entra "fresca"
+    // (sem cooldown pendente de quem ocupava o slot antes).
     //
     // Uma mesma skill não pode ficar em dois slots: se ela já estiver em outro slot,
     // esse slot é esvaziado antes da atribuição. Por isso quem chama deve refazer a
     // barra inteira (SkillBarUI.RefreshAll), não só o slot de destino.
-    public void SetSkillAt(int index, Skill skill, Sprite icon)
+    public void SetSkillAt(int index, Skill skill)
     {
         if (index < 0 || index >= slots.Length)
             return;
@@ -445,7 +437,6 @@ public class PlayerSkillManager : MonoBehaviour
         }
 
         slots[index].skill = skill;
-        slots[index].icon = icon;
         slots[index].cooldown = carriedCooldown;
         slots[index].duration = carriedDuration;
 
@@ -455,7 +446,6 @@ public class PlayerSkillManager : MonoBehaviour
     private void ClearSlot(int index)
     {
         slots[index].skill = null;
-        slots[index].icon = null;
         slots[index].cooldown = 0f;
         slots[index].duration = 0f;
     }
@@ -469,7 +459,6 @@ public class PlayerSkillManager : MonoBehaviour
             return;
 
         (slots[indexA].skill, slots[indexB].skill) = (slots[indexB].skill, slots[indexA].skill);
-        (slots[indexA].icon, slots[indexB].icon) = (slots[indexB].icon, slots[indexA].icon);
         (slots[indexA].cooldown, slots[indexB].cooldown) = (slots[indexB].cooldown, slots[indexA].cooldown);
         (slots[indexA].duration, slots[indexB].duration) = (slots[indexB].duration, slots[indexA].duration);
 

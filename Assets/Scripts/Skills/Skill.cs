@@ -5,7 +5,11 @@ using UnityEngine.Serialization;
 using UnityEditor;
 #endif
 
+#if UNITY_EDITOR
+public abstract class Skill : ScriptableObject, IStableAssetId
+#else
 public abstract class Skill : ScriptableObject
+#endif
 {
     [Header("Info")]
     public string skillName;
@@ -49,14 +53,21 @@ public abstract class Skill : ScriptableObject
         };
     }
 
-    // Id estável — hoje o loadout vem de ClassDefinitionSO.defaultSkills (referência
-    // direta), então nada ainda consome isto. Preparado para o dia em que o save
-    // precisar referenciar skills por id (loadout customizado, especializações).
+    // Id estável (GUID do asset) — usado por SkillProgression/SkillLoadout pra
+    // referenciar a skill no save (JsonUtility não serializa a referência direta).
     [SerializeField, HideInInspector] private string id;
     public string Id => id;
 
 #if UNITY_EDITOR
     private void OnValidate()
+    {
+        EnsureId();
+    }
+
+    // Chamado também pelo StableAssetIdPostprocessor no import de qualquer asset —
+    // cobre o caso de uma skill nunca aberta no Inspector (mesmo padrão de
+    // ItemSO.EnsureId()).
+    public void EnsureId()
     {
         if (!string.IsNullOrEmpty(id))
             return;

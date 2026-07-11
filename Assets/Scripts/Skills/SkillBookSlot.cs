@@ -30,8 +30,6 @@ public class SkillBookSlot : MonoBehaviour,
     // a cena e o drag/refresh não acham a skill).
     [field: SerializeField] public Skill Skill { get; private set; }
 
-    public Sprite IconSprite => icon != null ? icon.sprite : null;
-
     public void Configure(Skill skill, Image iconImage, Button plus, TMP_Text pips, GameObject locked)
     {
         Skill = skill;
@@ -83,15 +81,10 @@ public class SkillBookSlot : MonoBehaviour,
 
         if (icon != null)
         {
-            // Sincroniza com Skill.icon toda vez, não só na cena baked em editor —
-            // mudar o ícone no asset da Skill já reflete aqui sem precisar reabrir o
-            // Livro no Editor e reatribuir à mão (mesmo padrão de SkillBarSlot.Refresh()).
-            if (Skill != null && Skill.icon != null)
-            {
-                icon.sprite = Skill.icon;
-                icon.preserveAspect = true;
-            }
-
+            // Sincroniza com Skill.icon toda vez (mesmo se virou null) — nunca fica
+            // com um sprite antigo em cache, mesmo padrão de SkillBarSlot.Refresh().
+            icon.sprite = Skill != null ? Skill.icon : null;
+            icon.preserveAspect = true;
             icon.color = learned ? Color.white : LockedTint;
         }
 

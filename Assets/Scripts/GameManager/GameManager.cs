@@ -27,6 +27,12 @@ public class GameManager : MonoBehaviour
     [Tooltip("Classes existentes no jogo — usado só para resolver o classId salvo de volta a um ClassDefinitionSO.")]
     [SerializeField] private ClassDefinitionSO[] knownClasses;
 
+    // Expostos pra InventoryManager/EquipmentManager (RestoreState) e SaveSystem
+    // (LoadInto) — GameManager é o único lugar com essas referências Inspector-wired,
+    // então managers plugáveis as leem daqui em vez de precisar da própria cópia.
+    public ItemDatabaseSO ItemDatabase => itemDatabase;
+    public ExpManager ExpManager => expManager;
+
     [Header("Player")]
     [Tooltip("Instanciado no respawn (Destroy + Instantiate) — garante estado 100% limpo (Animator, cast em andamento, etc.) em vez de reativar a mesma instância.")]
     [SerializeField] private GameObject playerPrefab;
@@ -95,8 +101,13 @@ public class GameManager : MonoBehaviour
     {
         InitializeSceneBootstrap();
 
+        // Sempre um dos dois, nunca implícito — nenhum manager decide seu próprio
+        // estado de gameplay em Awake/OnEnable/Start (ver ISaveParticipant); é este
+        // ponto único que diz "Novo Jogo" ou "Load" depois que o bootstrap terminou.
         if (pendingSlotToApply != null)
-            LoadGame(pendingSlotToApply);
+            SaveSystem.LoadInto(pendingSlotToApply);
+        else
+            SaveSystem.InitializeNewGame();
 
         pendingSlotToApply = null;
     }
@@ -199,7 +210,7 @@ public class GameManager : MonoBehaviour
 
         if (skillManager != null)
         {
-            // Garante slots construídos antes do Rebind ler GetSkillAt/GetIconAt — Awake()
+            // Garante slots construídos antes do Rebind ler GetSkillAt — Awake()
             // de PlayerSkillManager pode ainda não ter rodado nesta mesma instância (ver
             // comentário em PlayerSkillManager.EnsureSlotsBuilt).
             skillManager.EnsureSlotsBuilt();
@@ -253,104 +264,15 @@ public class GameManager : MonoBehaviour
             operation.completed += _ => onLoaded();
     }
 
-    public void SaveGame(string slot)
-    {
-        if (Player == null || StatsManager.Instance == null)
-        {
-            Debug.LogError("GameManager: SaveGame abortado — Player ou StatsManager ausente.");
-            return;
-        }
+    // Wrapper fino — toda a orquestração de save/load vive em SaveSystem (separado
+    // do GameManager de propósito: aqui é só a raiz de composição de mundo/cena).
+    // Mantido público porque F5 (debug, abaixo) e uma futura UI de "Salvar" chamam
+    // por aqui, nunca SaveSystem diretamente.
+    public void SaveGame(string slot) => SaveSystem.Save(slot);
 
-        // Nenhum manager obrigatório pode faltar: gravar lista vazia/zero por cima
-        // de um save bom apagaria progresso silenciosamente. Aborta em vez disso.
-        if (InventoryManager.Instance == null || EquipmentManager.Instance == null ||
-            QuestManager.Instance == null || GoldManager.Instance == null || expManager == null ||
-            WorldItemRegistry.Instance == null)
-        {
-            Debug.LogError("GameManager: SaveGame abortado — um manager obrigatório está ausente.");
-            return;
-        }
-
-        StatsSave stats = StatsManager.Instance.GetState();
-
-        SaveData data = new()
-        {
-            sceneId = SceneManager.GetActiveScene().name,
-            player = new PlayerSave
-            {
-                classId = stats.classId,
-                level = stats.level,
-                currentExp = expManager.GetState(),
-                currentHealth = stats.currentHealth,
-                currentMana = stats.currentMana,
-                position = Player.position
-            },
-            inventory = InventoryManager.Instance.GetState(),
-            equipment = EquipmentManager.Instance.GetState(),
-            quests = QuestManager.Instance.GetState(),
-            gold = GoldManager.Instance.GetState(),
-            collectedWorldItems = WorldItemRegistry.Instance.GetState()
-        };
-
-        SaveService.Save(slot, data);
-        Debug.Log($"Jogo salvo (slot '{slot}').");
-    }
-
-    // Ordem importa: classe → level/exp → recalc (já dentro de SetClass/SetLevel) →
-    // equipamento (que já faz unequip-all antes de reaplicar) → inventário →
-    // vitals (clampam contra o MaxHealth/MaxMana já corretos) → posição.
-    public void LoadGame(string slot)
-    {
-        if (!SaveService.TryLoad(slot, out SaveData data))
-            return;
-
-        if (StatsManager.Instance == null || Player == null)
-            return;
-
-        ClassDefinitionSO savedClass = FindClassById(data.player.classId);
-
-        if (savedClass != null)
-        {
-            StatsManager.Instance.SetClass(savedClass);
-
-            PlayerSkillManager skillManager = Player.GetComponent<PlayerSkillManager>();
-
-            if (skillManager != null)
-                skillManager.RebuildLoadout();
-        }
-
-        StatsManager.Instance.SetLevel(data.player.level);
-
-        if (expManager != null)
-            expManager.ApplyState(data.player.currentExp);
-
-        // Antes do InventoryManager.ApplyState não é estritamente necessário (não há
-        // dependência entre eles), mas roda cedo pra deixar claro que qualquer
-        // WorldItem cujo Start() rode depois (nesta mesma cena recém-recarregada) já
-        // vai encontrar o registro de coletados correto.
-        if (WorldItemRegistry.Instance != null)
-            WorldItemRegistry.Instance.ApplyState(data.collectedWorldItems);
-
-        if (EquipmentManager.Instance != null)
-            EquipmentManager.Instance.ApplyState(data.equipment, itemDatabase);
-
-        if (InventoryManager.Instance != null)
-            InventoryManager.Instance.ApplyState(data.inventory, itemDatabase);
-
-        StatsManager.Instance.SetVitals(data.player.currentHealth, data.player.currentMana);
-
-        Player.position = data.player.position;
-
-        if (QuestManager.Instance != null)
-            QuestManager.Instance.ApplyState(data.quests);
-
-        if (GoldManager.Instance != null)
-            GoldManager.Instance.ApplyState(data.gold);
-
-        Debug.Log($"Jogo carregado (slot '{slot}').");
-    }
-
-    private ClassDefinitionSO FindClassById(string id)
+    // Usado por SaveSystem.LoadInto — resolve o classId salvo de volta pro asset,
+    // usando knownClasses[] (Inspector-wired aqui, não em StatsManager/SaveSystem).
+    public ClassDefinitionSO FindClassById(string id)
     {
         if (string.IsNullOrEmpty(id) || knownClasses == null)
             return null;

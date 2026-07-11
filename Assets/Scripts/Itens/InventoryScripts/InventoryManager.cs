@@ -1,10 +1,22 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class InventoryManager : MonoBehaviour, ICancelable
+// DTO de save deste manager — ver ISaveParticipant/SaveSystem.
+[Serializable]
+public class InventorySave
 {
+    public List<ItemStackSave> items = new();
+}
+
+public class InventoryManager : MonoBehaviour, ICancelable, ISaveParticipant
+{
+    public string SaveKey => "inventory";
+    public int SchemaVersion => 1;
+    public int Order => 100;
+
     public static InventoryManager Instance;
     public CanvasGroup inventoryCanvas;
     public InputActionReference toggleInventory;
@@ -48,6 +60,7 @@ public class InventoryManager : MonoBehaviour, ICancelable
         }
 
         Instance = this;
+        SaveRegistry.Register(this);
     }
 
     private void OnEnable()
@@ -353,11 +366,22 @@ public class InventoryManager : MonoBehaviour, ICancelable
 
         if (Instance == this)
             Instance = null;
+
+        SaveRegistry.Unregister(this);
     }
 
-    public List<ItemStackSave> GetState()
+    // Novo Jogo = inventário vazio. Chamado só pelo SaveSystem.
+    public void InitializeNewGame()
     {
-        List<ItemStackSave> result = new();
+        for (int i = 0; i < itemSlot.Length; i++)
+            itemSlot[i].Clear();
+
+        unresolvedStacks.Clear();
+    }
+
+    public string CaptureState()
+    {
+        List<ItemStackSave> items = new();
 
         for (int i = 0; i < itemSlot.Length; i++)
         {
@@ -366,7 +390,7 @@ public class InventoryManager : MonoBehaviour, ICancelable
             if (slot.item == null)
                 continue;
 
-            result.Add(new ItemStackSave
+            items.Add(new ItemStackSave
             {
                 slotIndex = i,
                 itemId = slot.item.Id,
@@ -383,25 +407,28 @@ public class InventoryManager : MonoBehaviour, ICancelable
                 || itemSlot[unresolved.slotIndex].item == null;
 
             if (slotStillFree)
-                result.Add(unresolved);
+                items.Add(unresolved);
         }
 
-        return result;
+        return JsonUtility.ToJson(new InventorySave { items = items });
     }
 
     // Reconstrói o inventário do zero a partir do save — todo slot não presente na
     // lista fica vazio (Clear), então não sobra item de uma partida anterior.
-    public void ApplyState(List<ItemStackSave> state, ItemDatabaseSO database)
+    public void RestoreState(string json, int schemaVersion)
     {
         for (int i = 0; i < itemSlot.Length; i++)
             itemSlot[i].Clear();
 
         unresolvedStacks.Clear();
 
-        if (state == null || database == null)
+        InventorySave save = JsonUtility.FromJson<InventorySave>(json);
+        ItemDatabaseSO database = GameManager.Instance != null ? GameManager.Instance.ItemDatabase : null;
+
+        if (save?.items == null || database == null)
             return;
 
-        foreach (ItemStackSave stack in state)
+        foreach (ItemStackSave stack in save.items)
         {
             if (stack.slotIndex < 0 || stack.slotIndex >= itemSlot.Length)
             {

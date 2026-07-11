@@ -38,11 +38,24 @@ public class EquippedSlot : MonoBehaviour,
 
     private void Start()
     {
-        itemImage.enabled = false;
+        // Deriva do dado (equippedItem é sempre null aqui — Awake/Start rodam antes
+        // de qualquer RestoreState) em vez de forçar "vazio" incondicionalmente: um
+        // componente puramente visual nunca deve decidir estado por conta própria,
+        // só refletir o que já existe. Ver Equip()/Unequip(), que chamam o mesmo método.
+        RefreshVisual();
+    }
+
+    private void RefreshVisual()
+    {
+        bool hasItem = equippedItem != null;
+
+        itemImage.sprite = hasItem ? equippedItem.itemSprite : null;
+        itemImage.enabled = hasItem;
 
         if (placeholder != null)
-            placeholder.SetActive(true);
+            placeholder.SetActive(!hasItem);
     }
+
     public bool CanEquip(ItemSO item)
     {
         return item.itemType == acceptedType;
@@ -68,12 +81,7 @@ public class EquippedSlot : MonoBehaviour,
         ItemSO previousItem = equippedItem;
 
         equippedItem = item;
-
-        itemImage.sprite = item.itemSprite;
-        itemImage.enabled = true;
-
-        if (placeholder != null)
-            placeholder.SetActive(false);
+        RefreshVisual();
 
         return previousItem;
     }
@@ -81,12 +89,7 @@ public class EquippedSlot : MonoBehaviour,
     public void Unequip()
     {
         equippedItem = null;
-
-        itemImage.sprite = null;
-        itemImage.enabled = false;
-
-        if (placeholder != null)
-            placeholder.SetActive(true);
+        RefreshVisual();
     }
 
     public void OnPointerClick(PointerEventData eventData)

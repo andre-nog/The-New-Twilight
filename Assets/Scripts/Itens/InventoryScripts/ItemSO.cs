@@ -5,7 +5,11 @@ using UnityEditor;
 #endif
 
 [CreateAssetMenu(fileName = "New Item", menuName = "Inventory/Item")]
+#if UNITY_EDITOR
+public class ItemSO : ScriptableObject, IStableAssetId
+#else
 public class ItemSO : ScriptableObject
+#endif
 {
     [Header("Basic Info")]
     public string itemName;

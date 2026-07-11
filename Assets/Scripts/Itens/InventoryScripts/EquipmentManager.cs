@@ -1,8 +1,20 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EquipmentManager : MonoBehaviour
+// DTO de save deste manager — ver ISaveParticipant/SaveSystem.
+[Serializable]
+public class EquipmentSave
 {
+    public List<EquippedSave> items = new();
+}
+
+public class EquipmentManager : MonoBehaviour, ISaveParticipant
+{
+    public string SaveKey => "equipment";
+    public int SchemaVersion => 1;
+    public int Order => 50;
+
     public static EquipmentManager Instance;
 
     [Header("Equipment Slots")]
@@ -21,12 +33,15 @@ public class EquipmentManager : MonoBehaviour
         }
 
         Instance = this;
+        SaveRegistry.Register(this);
     }
 
     private void OnDestroy()
     {
         if (Instance == this)
             Instance = null;
+
+        SaveRegistry.Unregister(this);
     }
 
     private void AddModifiers(ItemSO item)
@@ -188,26 +203,33 @@ public class EquipmentManager : MonoBehaviour
         return System.Array.IndexOf(equippedSlots, slot);
     }
 
-    public List<EquippedSave> GetState()
+    // Novo Jogo = nada equipado. Chamado só pelo SaveSystem.
+    public void InitializeNewGame()
     {
-        List<EquippedSave> result = new();
+        UnequipAllSilent();
+        unresolvedEquipped.Clear();
+    }
+
+    public string CaptureState()
+    {
+        List<EquippedSave> items = new();
 
         for (int i = 0; i < equippedSlots.Length; i++)
         {
             ItemSO item = equippedSlots[i].GetItem();
 
             if (item != null)
-                result.Add(new EquippedSave { slotIndex = i, itemId = item.Id });
+                items.Add(new EquippedSave { slotIndex = i, itemId = item.Id });
         }
 
-        result.AddRange(unresolvedEquipped);
+        items.AddRange(unresolvedEquipped);
 
-        return result;
+        return JsonUtility.ToJson(new EquipmentSave { items = items });
     }
 
     // Remove todos os itens equipados e os modifiers correspondentes sem devolver
     // nada ao inventário — usado antes de aplicar um save, cujo inventário já vai
-    // ser reconstruído do zero em seguida (ver InventoryManager.ApplyState).
+    // ser reconstruído do zero em seguida (ver InventoryManager.RestoreState).
     public void UnequipAllSilent()
     {
         foreach (EquippedSlot slot in equippedSlots)
@@ -224,15 +246,18 @@ public class EquipmentManager : MonoBehaviour
 
     // Reconstrói o equipamento do zero a partir do save, reaplicando pelo Equip()
     // normal — assim os modifiers fluem pelo StatsManager como em qualquer equipar.
-    public void ApplyState(List<EquippedSave> state, ItemDatabaseSO database)
+    public void RestoreState(string json, int schemaVersion)
     {
         UnequipAllSilent();
         unresolvedEquipped.Clear();
 
-        if (state == null || database == null)
+        EquipmentSave save = JsonUtility.FromJson<EquipmentSave>(json);
+        ItemDatabaseSO database = GameManager.Instance != null ? GameManager.Instance.ItemDatabase : null;
+
+        if (save?.items == null || database == null)
             return;
 
-        foreach (EquippedSave saved in state)
+        foreach (EquippedSave saved in save.items)
         {
             ItemSO item = database.GetById(saved.itemId);
 

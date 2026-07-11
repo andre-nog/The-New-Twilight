@@ -35820,23 +35820,23 @@ MonoBehaviour:
   intelligence:
     Base: 1
     Bonus: 0
-  baseMaxHealth: 350
-  baseHealthRegen: 1
-  baseMaxMana: 100
-  baseManaRegen: 1
+  baseMaxHealth: 335
+  baseHealthRegen: 0.4
+  baseMaxMana: 90
+  baseManaRegen: 0.4
   baseAttackPower: 40
   baseSpellPower: 0
   baseArmor: 5
   baseMoveSpeed: 2.5
   baseCriticalChance: 0
   baseCriticalDamage: 50
-  healthPerStrength: 10
-  healthRegenPerStrength: 0.1
+  healthPerStrength: 15
+  healthRegenPerStrength: 0.15
   attackPowerPerStrength: 2
-  critChancePerAgility: 0.2
-  hasteConstant: 1000
+  critChancePerAgility: 0.05
+  hasteConstant: 500
   attackPowerPerAgility: 2
-  manaPerIntelligence: 5
+  manaPerIntelligence: 10
   manaRegenPerIntelligence: 0.1
   spellPowerPerIntelligence: 2
   currentHealth: 8

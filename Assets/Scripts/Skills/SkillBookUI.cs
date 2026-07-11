@@ -10,9 +10,6 @@ using UnityEngine.InputSystem;
 // slots (pips, overlay de travado, botão "+"). Assina OnProgressionChanged só
 // enquanto o livro está aberto — nível/aprender/upar mudam o painel na hora.
 //
-// DefaultExecutionOrder negativo pra Instance existir antes do Awake (ordem padrão,
-// 0) de PlayerSkillManager — que consulta GetIconFor ao semear a barra, pra usar o
-// mesmo ícone (possivelmente customizado no Inspector) mostrado no Livro.
 [DefaultExecutionOrder(-50)]
 public class SkillBookUI : MonoBehaviour, ICancelable
 {
@@ -35,24 +32,6 @@ public class SkillBookUI : MonoBehaviour, ICancelable
         }
 
         Instance = this;
-    }
-
-    // Ícone tal como exibido no slot desta skill no Livro — pode ser um sprite
-    // customizado atribuído no Inspector, diferente de Skill.icon. Usado pra manter
-    // o ícone da barra consistente quando uma skill autoLearnedAtStart é auto-equipada
-    // (sem passar pelo drag, que já carrega esse sprite via SkillBookSlot.IconSprite).
-    public Sprite GetIconFor(Skill skill)
-    {
-        if (skill == null || slots == null)
-            return null;
-
-        foreach (SkillBookSlot slot in slots)
-        {
-            if (slot != null && slot.Skill == skill)
-                return slot.IconSprite;
-        }
-
-        return null;
     }
 
     // Chamado pelo SkillBookCanvasBuilder (edit time) pra gravar as referências dos
