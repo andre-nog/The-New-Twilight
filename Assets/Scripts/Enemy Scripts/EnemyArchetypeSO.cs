@@ -60,6 +60,13 @@ public class EnemyArchetypeSO : ScriptableObject
     [Tooltip("Tempo depois do dano até o inimigo voltar a poder se mover/perseguir.")]
     public float attackRecovery = 0.2f;
 
+    [Header("Burn (opcional)")]
+    [Tooltip("Se marcado, um ataque básico bem-sucedido deste inimigo aplica queimadura no alvo.")]
+    public bool appliesBurn = false;
+    public float burnTickDamage = 5f;
+    public float burnTickInterval = 2f;
+    public float burnDuration = 6f;
+
     [Header("Movimento")]
     public float moveSpeed = 2f;
     [Tooltip("Velocidade ao retornar pro ponto de spawn — hoje pode ser igual ou diferente de moveSpeed.")]

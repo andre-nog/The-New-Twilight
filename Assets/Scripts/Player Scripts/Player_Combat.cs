@@ -292,6 +292,45 @@ public class Player_Combat : MonoBehaviour
 
         SpawnHitVFX(transform.position, ctx.Skill);
     }
+    // Segundo alvo de um golpe primário-mais-próximo (ex.: Cleave Strike) — inimigo vivo
+    // mais próximo do ALVO PRIMÁRIO (não do jogador), mesmo OverlapCircleAll+enemyLayer
+    // de DealAreaDamage, só que centrado no primário. Sem alvo secundário na área, só o
+    // primário é atingido (sem erro).
+    public void DealDamageToNearbySecondaryTarget(GameObject primaryTarget, float searchRadius, float damagePercent, in CastContext ctx)
+    {
+        if (primaryTarget == null)
+            return;
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(primaryTarget.transform.position, searchRadius, enemyLayer);
+
+        GameObject secondary = null;
+        float bestDistSqr = float.MaxValue;
+
+        foreach (Collider2D hit in hits)
+        {
+            if (hit.gameObject == primaryTarget)
+                continue;
+
+            IDamageable candidate = hit.GetComponent<IDamageable>();
+
+            if (candidate == null || !candidate.IsAlive)
+                continue;
+
+            float distSqr = ((Vector2)hit.transform.position - (Vector2)primaryTarget.transform.position).sqrMagnitude;
+
+            if (distSqr < bestDistSqr)
+            {
+                bestDistSqr = distSqr;
+                secondary = hit.gameObject;
+            }
+        }
+
+        if (secondary == null)
+            return;
+
+        DealDamage(secondary.GetComponent<IDamageable>(), ctx.WithExtraMultiplier(ctx.ExtraMultiplier * damagePercent));
+        SpawnHitVFX(secondary.transform.position, ctx.Skill);
+    }
     public void ExecuteSkillEffect()
     {
         Skill skill = pendingCast.Skill;

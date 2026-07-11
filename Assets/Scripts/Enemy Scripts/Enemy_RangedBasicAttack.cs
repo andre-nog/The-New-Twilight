@@ -54,6 +54,15 @@ public class Enemy_RangedBasicAttack : MonoBehaviour, IEnemyBasicAttack
         attackRoutine = StartCoroutine(AttackSequence());
     }
 
+    public void CancelAttack()
+    {
+        if (attackRoutine == null)
+            return;
+
+        StopCoroutine(attackRoutine);
+        attackRoutine = null;
+    }
+
     // Mesma estrutura windup -> disparo -> recovery -> EndAttack de Enemy_Combat —
     // só troca ResolveDamage direto por instanciar um projétil que resolve o dano
     // sozinho quando chega ao alvo.

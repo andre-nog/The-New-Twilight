@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b9d037d5e3373c419bd25d48bb3e30a, type: 3}
-  m_Name: Stomp
-  m_EditorClassIdentifier: Assembly-CSharp::StompSkill
-  skillName: Stomp
+  m_Name: Cleave Strike
+  m_EditorClassIdentifier: Assembly-CSharp::CleaveStrikeSkill
+  skillName: Cleave Strike
   skillType: 2
   icon: {fileID: 0}
   description: 
@@ -31,20 +31,23 @@ MonoBehaviour:
     manaCost: 20
     resourceGenerated: 0
   id: 646f9851ecc2b6845a7a45b8be6412d3
-  requiresTarget: 0
+  preferredDefaultSlot: -1
+  requiresTarget: 1
   lockMovementDuringCast: 1
-  followTargetWhileOnCooldown: 0
+  executeEffectImmediately: 0
+  followTargetWhileOnCooldown: 1
+  requiresOutOfCombat: 0
   cooldown: 12
-  range: 0
+  range: 1.2
   damageMultiplier: 1.5
   damageSchool: 0
   affectedByHaste: 0
   resourceGenerated: 0
-  resourceCost: 0
+  resourceCost: 2
   manaCost: 20
   hitVFX: {fileID: 8523588817701343864, guid: c7cae6474a7e11f48b74c22a9496dedc, type: 3}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: PowerStrike
   maxCastDuration: 3
-  radius: 2.5
-  momentumScaling: 0.5
+  secondaryTargetRadius: 2.5
+  secondaryDamagePercent: 0.8

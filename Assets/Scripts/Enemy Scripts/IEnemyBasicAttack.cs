@@ -10,4 +10,9 @@
 public interface IEnemyBasicAttack
 {
     void BeginAttack();
+
+    // Interrompe um ataque em andamento (windup/recovery) sem disparar seu efeito —
+    // usado por stun, pra um golpe já enfileirado não acertar depois do inimigo já
+    // estar congelado.
+    void CancelAttack();
 }

@@ -1,9 +1,10 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PlayerHealth : MonoBehaviour, IDamageable
+public class PlayerHealth : MonoBehaviour, IDamageable, IBurnable
 {
     // Inimigos assinam isso pra desaggrar e voltar ao spawn assim que o player morre,
     // em vez de continuar perseguindo/atacando um alvo "morto" até o respawn.
@@ -102,6 +103,46 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             transform.position + Vector3.up * 0.5f,
             result.FinalDamage,
             popupColor);
+    }
+
+    private static readonly Color BurnColor = new(0.9f, 0.15f, 0.1f, 1f);
+
+    private StunIndicator burnIndicator;
+    private Coroutine burnRoutine;
+
+    // IBurnable — reaplicar enquanto já queimando só reinicia a duração (sem empilhar
+    // ticks), mesmo padrão de Enemy_Movement.ApplyStun.
+    public void ApplyBurn(float tickDamage, float tickInterval, float duration)
+    {
+        if (burnRoutine != null)
+            StopCoroutine(burnRoutine);
+
+        burnRoutine = StartCoroutine(BurnRoutine(tickDamage, tickInterval, duration));
+    }
+
+    private IEnumerator BurnRoutine(float tickDamage, float tickInterval, float duration)
+    {
+        if (burnIndicator == null)
+            burnIndicator = gameObject.AddComponent<StunIndicator>();
+
+        burnIndicator.SetVisible(true, BurnColor);
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            yield return new WaitForSeconds(tickInterval);
+            elapsed += tickInterval;
+
+            if (!IsAlive)
+                break;
+
+            DamageResult tick = DamageCalculator.Calculate(tickDamage, 1f, 1f, 0f, 0f, Armor);
+            TakeDamage(tick);
+        }
+
+        burnIndicator.SetVisible(false, BurnColor);
+        burnRoutine = null;
     }
 
     public void ChangeHealth(int amount)

@@ -18,8 +18,8 @@ public readonly struct CastContext
         ExtraMultiplier = extraMultiplier;
     }
 
-    // Deriva um novo contexto em vez de mutar o atual (ex.: Stomp escalando pelo
-    // Momentum consumido).
+    // Deriva um novo contexto em vez de mutar o atual (ex.: Cleave Strike aplicando
+    // uma fração do dano no alvo secundário).
     public CastContext WithExtraMultiplier(float multiplier)
     {
         return new CastContext(Skill, Target, multiplier);

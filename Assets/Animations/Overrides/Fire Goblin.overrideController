@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Fire Goblin
+  m_Controller: {fileID: 9100000, guid: 2d5a1b4460ea7c94ba633877d5170fbc, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: fb56679fbf2952840bdaa831bab7de57, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 1154cfd8198126a4ca7e9e573efbc122, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 81b05ecf10814e14b91ab768dad77562, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: b899d96315070964b85cda21d907ddb9, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: c970e284b93dc9d44b786e5fa3f2283b, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 7954830dac94eab44855706d68dc23bb, type: 2}

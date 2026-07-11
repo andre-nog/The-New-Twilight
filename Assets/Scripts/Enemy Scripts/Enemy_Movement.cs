@@ -1,8 +1,9 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 
-public class Enemy_Movement : MonoBehaviour
+public class Enemy_Movement : MonoBehaviour, IStunnable
 {
     // Estes cinco (+ returnSpeed) agora vêm do EnemyArchetypeSO em Start() — os
     // valores aqui são só o fallback caso o inimigo não tenha um archetype
@@ -46,6 +47,10 @@ public class Enemy_Movement : MonoBehaviour
     [SerializeField] private float maxSeparation = 2f;        // clamp on the summed neighbour push
     [SerializeField] private float navSampleDistance = 0.75f; // max distance allowed when clamping to the navmesh
 
+    [Header("Stun")]
+    [Tooltip("Cor do ícone acima da cabeça enquanto atordoado. Placeholder (disco sólido) até existir um VFX de redemoinho.")]
+    [SerializeField] private Color stunColor = new(0.2f, 0.4f, 1f, 1f);
+
     [Header("Stuck detection")]
     // Only request a fresh path when an enemy is GENUINELY jammed (wanted to move but barely
     // did), never every frame — keeps NavMesh recalculations rare. A short lateral bias breaks
@@ -85,6 +90,8 @@ public class Enemy_Movement : MonoBehaviour
     private Enemy_Health enemyHealth;
     private IEnemyBasicAttack combat; // Enemy_Combat (corpo a corpo) ou Enemy_RangedBasicAttack (à distância) — o que existir no prefab
     private EnemyStats stats;
+    private StunIndicator stunIndicator;
+    private Coroutine stunRoutine;
 
     // Encontrado via GetComponentInChildren em Start() — nenhum prefab precisa mais
     // arrastar isso manualmente no Inspector, contanto que siga a hierarquia padrão
@@ -645,6 +652,58 @@ public class Enemy_Movement : MonoBehaviour
             ChangeState(EnemyState.Chasing);
         else
             ChangeState(EnemyState.Idle);
+    }
+
+    // IStunnable — reaplicar enquanto já atordoado só reinicia a duração (sem empilhar
+    // coroutines nem somar tempo).
+    public void ApplyStun(float duration)
+    {
+        if (stunRoutine != null)
+            StopCoroutine(stunRoutine);
+
+        stunRoutine = StartCoroutine(StunRoutine(duration));
+    }
+
+    private IEnumerator StunRoutine(float duration)
+    {
+        combat?.CancelAttack();
+
+        // Sem isso o inimigo ficaria preso em Attacking pra sempre: é EndAttack() (chamado
+        // pelo próprio ataque ao terminar) que normalmente tira dele desse estado, e acabamos
+        // de cancelar o ataque antes disso rodar.
+        if (enemyState == EnemyState.Attacking)
+            ChangeState(EnemyState.Idle);
+
+        StopMoving();
+        SetIdlePose();
+
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        if (stunIndicator == null)
+            stunIndicator = gameObject.AddComponent<StunIndicator>();
+
+        stunIndicator.SetVisible(true, stunColor);
+
+        // Desabilita o próprio componente: Update() (movimento, aggro, facing, cooldown de
+        // ataque) para por completo. A coroutine continua rodando mesmo desabilitado — só
+        // Update/FixedUpdate/etc. são pausados, não coroutines já iniciadas.
+        enabled = false;
+
+        yield return new WaitForSeconds(duration);
+
+        enabled = true;
+
+        stunIndicator.SetVisible(false, stunColor);
+
+        if (agent.isOnNavMesh)
+            agent.isStopped = false;
+
+        RefreshAnimatorState();
+        stunRoutine = null;
     }
 
     private void OnDrawGizmosSelected()

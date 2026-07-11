@@ -31,6 +31,15 @@ public class Enemy_Combat : MonoBehaviour, IEnemyBasicAttack
         attackRoutine = StartCoroutine(AttackSequence());
     }
 
+    public void CancelAttack()
+    {
+        if (attackRoutine == null)
+            return;
+
+        StopCoroutine(attackRoutine);
+        attackRoutine = null;
+    }
+
     private IEnumerator AttackSequence()
     {
         anim.SetTrigger("Attack");
@@ -70,5 +79,11 @@ public class Enemy_Combat : MonoBehaviour, IEnemyBasicAttack
 
         if (hit && audioSource != null && stats.Archetype != null && stats.Archetype.attackSfx != null)
             audioSource.PlayOneShot(stats.Archetype.attackSfx);
+
+        if (hit && stats.Archetype != null && stats.Archetype.appliesBurn)
+        {
+            IBurnable burnable = player.GetComponent<IBurnable>();
+            burnable?.ApplyBurn(stats.Archetype.burnTickDamage, stats.Archetype.burnTickInterval, stats.Archetype.burnDuration);
+        }
     }
 }

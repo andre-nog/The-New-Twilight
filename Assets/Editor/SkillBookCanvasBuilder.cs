@@ -34,7 +34,7 @@ public static class SkillBookCanvasBuilder
     {
         "Auto Attack",
         "Power Strike",
-        "Stomp",
+        "Cleave Strike",
         "Recovery",
     };
 

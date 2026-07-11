@@ -100,6 +100,10 @@ public abstract class Skill : ScriptableObject
     public bool requiresOutOfCombat = false;
     public float cooldown;
     public float range;
+
+    // Fallback usado só por LegacyLevelData() quando `levels` está vazio (ex.: Recovery).
+    // Ignorado assim que a skill tem a tabela de níveis preenchida — não editar aqui
+    // pra "balancear" uma skill que já usa levels, o valor não terá efeito nenhum.
     public float damageMultiplier = 1f;
     public DamageSchool damageSchool = DamageSchool.Physical;
 
@@ -129,8 +133,8 @@ public abstract class Skill : ScriptableObject
     // Dano esperado "pré-mitigação" (sem crit, variância de dano ou Armor do alvo) —
     // mesma fórmula usada de fato em Player_Combat.DealDamage, só que sem os termos
     // que dependem de RNG ou de um alvo selecionado (útil pra tooltip, que não tem
-    // alvo nem quer mostrar um valor que varia a cada frame). Virtual porque StompSkill
-    // precisa somar seu próprio termo de Momentum.
+    // alvo nem quer mostrar um valor que varia a cada frame). Virtual pra skills
+    // futuras que precisem somar um termo próprio ao dano esperado.
     public virtual float GetExpectedDamage(Player_Combat combat)
     {
         float offensivePower = damageSchool == DamageSchool.Magical

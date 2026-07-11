@@ -38,9 +38,9 @@ MonoBehaviour:
   executeEffectImmediately: 0
   followTargetWhileOnCooldown: 1
   requiresOutOfCombat: 0
-  cooldown: 6
+  cooldown: 8
   range: 1.2
-  damageMultiplier: 2.5
+  damageMultiplier: 1
   damageSchool: 0
   affectedByHaste: 0
   resourceGenerated: 0
@@ -50,3 +50,4 @@ MonoBehaviour:
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: PowerStrike
   maxCastDuration: 3
+  stunDuration: 2
