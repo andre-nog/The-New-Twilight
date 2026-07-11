@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ca7db46ca84686428df49812e2d45c6, type: 3}
   m_Name: AutoAttackBoost
   m_EditorClassIdentifier: Assembly-CSharp::VillagerMomentumPassive
-  fullMomentumBonus: 1.3
+  fullMomentumBonus: 1.1

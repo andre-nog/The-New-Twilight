@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyArchetypeSO
   displayName: Goblin
   id: 1be2df8f95de40af8c9e48b15c61b326
-  maxHealth: 400
+  maxHealth: 390
   armor: 5
   attackPower: 20
   criticalChance: 0
