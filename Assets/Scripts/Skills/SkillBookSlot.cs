@@ -126,7 +126,7 @@ public class SkillBookSlot : MonoBehaviour,
     public void OnEndDrag(PointerEventData eventData)
     {
         if (SkillDragController.Instance != null)
-            SkillDragController.Instance.EndDrag();
+            SkillDragController.Instance.EndDrag(eventData);
     }
 
     public void OnPointerEnter(PointerEventData eventData)

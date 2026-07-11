@@ -14,6 +14,7 @@ public class SkillBarSlot : MonoBehaviour,
     IDragHandler,
     IEndDragHandler,
     IDropHandler,
+    IPointerClickHandler,
     IPointerEnterHandler,
     IPointerExitHandler
 {
@@ -125,13 +126,27 @@ public class SkillBarSlot : MonoBehaviour,
     public void OnEndDrag(PointerEventData eventData)
     {
         if (SkillDragController.Instance != null)
-            SkillDragController.Instance.EndDrag();
+            SkillDragController.Instance.EndDrag(eventData);
     }
 
     public void OnDrop(PointerEventData eventData)
     {
         if (SkillDragController.Instance != null)
             SkillDragController.Instance.TryDrop(this);
+    }
+
+    // EventSystem já distingue clique rápido de arrasto: se o ponteiro se moveu o
+    // suficiente pra virar OnBeginDrag/OnDrag, este método não é chamado — então não
+    // precisa checar SkillDragController.IsDragging aqui.
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left)
+            return;
+
+        EnsureRefs();
+
+        if (skillManager != null)
+            skillManager.TryCastSlot(SlotIndex);
     }
 
     public void OnPointerEnter(PointerEventData eventData)

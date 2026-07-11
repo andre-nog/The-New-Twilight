@@ -404,6 +404,17 @@ public class PlayerSkillManager : MonoBehaviour
         return index >= 0 && index < slots.Length ? slots[index].icon : null;
     }
 
+    // Permite castar um slot por índice sem passar pelo InputAction — usado pelo
+    // clique do mouse no ícone da skill bar (SkillBarSlot.OnPointerClick), mesma
+    // lógica de cooldown/fila/ataque do input de teclado.
+    public void TryCastSlot(int index)
+    {
+        if (index < 0 || index >= slots.Length)
+            return;
+
+        TryCastOrQueue(slots[index].skill);
+    }
+
     // Atribui uma skill (com seu ícone) a um slot, sobrescrevendo o que estava lá —
     // usado pelo drag do Livro de Skills pra barra, e com skill=null pra esvaziar um
     // slot (drop fora da barra). A skill entra "fresca" (sem cooldown pendente de quem

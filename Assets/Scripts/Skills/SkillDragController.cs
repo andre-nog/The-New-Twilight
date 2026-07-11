@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -132,17 +133,31 @@ public class SkillDragController : MonoBehaviour
         }
     }
 
-    public void EndDrag()
+    public void EndDrag(PointerEventData eventData)
     {
-        // Drop fora da barra vindo de um slot da barra = remover a skill dele.
+        // Drop fora da barra vindo de um slot da barra = remover a skill dele. Mas
+        // "fora" só conta se o ponteiro realmente não está mais sobre nenhum slot —
+        // OnDrop pode não disparar no próprio slot de origem dependendo de como o
+        // raycast do frame de soltura resolveu (ex: soltar de volta quase no mesmo
+        // lugar de onde pegou). Sem essa segunda checagem, esse "solta onde pegou"
+        // era tratado como fora da barra e apagava a skill em vez de ser um no-op.
         if (!dropHandled && sourceSlot is SkillBarSlot barSource)
         {
-            PlayerSkillManager manager = SkillBarUI.Instance != null ? SkillBarUI.Instance.SkillManager : null;
+            SkillBarSlot hovered = FindSlotUnderPointer(eventData);
 
-            if (manager != null)
+            if (hovered != null)
             {
-                manager.SetSkillAt(barSource.SlotIndex, null, null);
-                SkillBarUI.Instance.RefreshSlot(barSource.SlotIndex);
+                TryDrop(hovered);
+            }
+            else
+            {
+                PlayerSkillManager manager = SkillBarUI.Instance != null ? SkillBarUI.Instance.SkillManager : null;
+
+                if (manager != null)
+                {
+                    manager.SetSkillAt(barSource.SlotIndex, null, null);
+                    SkillBarUI.Instance.RefreshSlot(barSource.SlotIndex);
+                }
             }
         }
 
@@ -151,5 +166,26 @@ public class SkillDragController : MonoBehaviour
 
         if (ghostIcon != null)
             ghostIcon.gameObject.SetActive(false);
+    }
+
+    private static readonly List<RaycastResult> raycastResults = new();
+
+    private static SkillBarSlot FindSlotUnderPointer(PointerEventData eventData)
+    {
+        if (EventSystem.current == null)
+            return null;
+
+        raycastResults.Clear();
+        EventSystem.current.RaycastAll(eventData, raycastResults);
+
+        foreach (RaycastResult result in raycastResults)
+        {
+            SkillBarSlot slot = result.gameObject.GetComponentInParent<SkillBarSlot>();
+
+            if (slot != null)
+                return slot;
+        }
+
+        return null;
     }
 }
