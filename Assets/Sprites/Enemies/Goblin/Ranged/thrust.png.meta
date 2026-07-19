@@ -196,10 +196,10 @@ TextureImporter:
       name: thrust_0
       rect:
         serializedVersion: 2
-        x: 16
-        y: 193
-        width: 38
-        height: 48
+        x: 0
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -218,10 +218,10 @@ TextureImporter:
       name: thrust_1
       rect:
         serializedVersion: 2
-        x: 79
-        y: 191
-        width: 37
-        height: 49
+        x: 64
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -240,10 +240,10 @@ TextureImporter:
       name: thrust_2
       rect:
         serializedVersion: 2
-        x: 145
-        y: 191
-        width: 37
-        height: 50
+        x: 128
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -262,10 +262,10 @@ TextureImporter:
       name: thrust_3
       rect:
         serializedVersion: 2
-        x: 209
-        y: 191
-        width: 35
-        height: 50
+        x: 192
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -284,10 +284,10 @@ TextureImporter:
       name: thrust_4
       rect:
         serializedVersion: 2
-        x: 274
-        y: 191
-        width: 34
-        height: 51
+        x: 256
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -306,10 +306,10 @@ TextureImporter:
       name: thrust_5
       rect:
         serializedVersion: 2
-        x: 338
-        y: 191
-        width: 34
-        height: 52
+        x: 320
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -328,10 +328,10 @@ TextureImporter:
       name: thrust_6
       rect:
         serializedVersion: 2
-        x: 402
-        y: 191
-        width: 36
-        height: 49
+        x: 384
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -350,10 +350,10 @@ TextureImporter:
       name: thrust_7
       rect:
         serializedVersion: 2
-        x: 465
-        y: 191
-        width: 36
-        height: 50
+        x: 448
+        y: 192
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -372,10 +372,10 @@ TextureImporter:
       name: thrust_8
       rect:
         serializedVersion: 2
-        x: 19
+        x: 0
         y: 128
-        width: 28
-        height: 50
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -394,10 +394,10 @@ TextureImporter:
       name: thrust_9
       rect:
         serializedVersion: 2
-        x: 74
-        y: 129
-        width: 36
-        height: 49
+        x: 64
+        y: 128
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -416,10 +416,10 @@ TextureImporter:
       name: thrust_10
       rect:
         serializedVersion: 2
-        x: 140
-        y: 129
-        width: 35
-        height: 49
+        x: 128
+        y: 128
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -438,10 +438,10 @@ TextureImporter:
       name: thrust_11
       rect:
         serializedVersion: 2
-        x: 198
-        y: 129
-        width: 42
-        height: 49
+        x: 192
+        y: 128
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -460,10 +460,10 @@ TextureImporter:
       name: thrust_12
       rect:
         serializedVersion: 2
-        x: 257
-        y: 129
-        width: 42
-        height: 49
+        x: 256
+        y: 128
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -482,10 +482,10 @@ TextureImporter:
       name: thrust_13
       rect:
         serializedVersion: 2
-        x: 319
-        y: 129
-        width: 44
-        height: 49
+        x: 320
+        y: 128
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -504,10 +504,10 @@ TextureImporter:
       name: thrust_14
       rect:
         serializedVersion: 2
-        x: 393
-        y: 129
-        width: 34
-        height: 49
+        x: 384
+        y: 128
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -526,10 +526,10 @@ TextureImporter:
       name: thrust_15
       rect:
         serializedVersion: 2
-        x: 469
-        y: 129
-        width: 29
-        height: 49
+        x: 448
+        y: 128
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -548,10 +548,10 @@ TextureImporter:
       name: thrust_16
       rect:
         serializedVersion: 2
-        x: 16
-        y: 63
-        width: 32
-        height: 52
+        x: 0
+        y: 64
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -570,10 +570,10 @@ TextureImporter:
       name: thrust_17
       rect:
         serializedVersion: 2
-        x: 74
-        y: 66
-        width: 36
-        height: 49
+        x: 64
+        y: 64
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -592,10 +592,10 @@ TextureImporter:
       name: thrust_18
       rect:
         serializedVersion: 2
-        x: 140
-        y: 66
-        width: 34
-        height: 49
+        x: 128
+        y: 64
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -614,10 +614,10 @@ TextureImporter:
       name: thrust_19
       rect:
         serializedVersion: 2
-        x: 205
-        y: 66
-        width: 33
-        height: 49
+        x: 192
+        y: 64
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -636,10 +636,10 @@ TextureImporter:
       name: thrust_20
       rect:
         serializedVersion: 2
-        x: 272
+        x: 256
         y: 64
-        width: 30
-        height: 50
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -658,10 +658,10 @@ TextureImporter:
       name: thrust_21
       rect:
         serializedVersion: 2
-        x: 336
-        y: 63
-        width: 30
-        height: 51
+        x: 320
+        y: 64
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -680,10 +680,10 @@ TextureImporter:
       name: thrust_22
       rect:
         serializedVersion: 2
-        x: 398
-        y: 66
-        width: 32
-        height: 48
+        x: 384
+        y: 64
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -702,10 +702,10 @@ TextureImporter:
       name: thrust_23
       rect:
         serializedVersion: 2
-        x: 463
-        y: 66
-        width: 31
-        height: 49
+        x: 448
+        y: 64
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -724,10 +724,10 @@ TextureImporter:
       name: thrust_24
       rect:
         serializedVersion: 2
-        x: 17
+        x: 0
         y: 0
-        width: 28
-        height: 50
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -746,10 +746,10 @@ TextureImporter:
       name: thrust_25
       rect:
         serializedVersion: 2
-        x: 82
-        y: 1
-        width: 36
-        height: 49
+        x: 64
+        y: 0
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -768,10 +768,10 @@ TextureImporter:
       name: thrust_26
       rect:
         serializedVersion: 2
-        x: 145
-        y: 1
-        width: 35
-        height: 49
+        x: 128
+        y: 0
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -790,10 +790,10 @@ TextureImporter:
       name: thrust_27
       rect:
         serializedVersion: 2
-        x: 208
-        y: 1
-        width: 42
-        height: 49
+        x: 192
+        y: 0
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -812,10 +812,10 @@ TextureImporter:
       name: thrust_28
       rect:
         serializedVersion: 2
-        x: 277
-        y: 1
-        width: 42
-        height: 49
+        x: 256
+        y: 0
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -834,10 +834,10 @@ TextureImporter:
       name: thrust_29
       rect:
         serializedVersion: 2
-        x: 341
-        y: 1
-        width: 44
-        height: 49
+        x: 320
+        y: 0
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -856,10 +856,10 @@ TextureImporter:
       name: thrust_30
       rect:
         serializedVersion: 2
-        x: 405
-        y: 1
-        width: 34
-        height: 49
+        x: 384
+        y: 0
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -878,10 +878,10 @@ TextureImporter:
       name: thrust_31
       rect:
         serializedVersion: 2
-        x: 462
-        y: 1
-        width: 29
-        height: 49
+        x: 448
+        y: 0
+        width: 64
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -900,7 +900,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: ab0e2eed20e1d4e4096cf74841487b99
     internalID: 0
     vertices: []
     indices: 
@@ -908,7 +908,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
       thrust_0: 6024834609794013129
       thrust_1: 842935541475254895

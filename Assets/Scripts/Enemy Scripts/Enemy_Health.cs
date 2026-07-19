@@ -24,6 +24,7 @@ public class Enemy_Health : MonoBehaviour, IDamageable
 
     // maxHealth/armor/expReward saíram daqui — agora vêm do EnemyArchetypeSO via EnemyStats.
     private EnemyStats stats;
+    private EnemyRespawn respawn;
     private bool isDead;
 
     public float Armor => stats.Armor;
@@ -36,6 +37,7 @@ public class Enemy_Health : MonoBehaviour, IDamageable
     {
         stats = GetComponent<EnemyStats>();
         Movement = GetComponent<Enemy_Movement>();
+        respawn = GetComponent<EnemyRespawn>();
         healthSlider = GetComponentInChildren<Slider>();
     }
 
@@ -105,6 +107,7 @@ public class Enemy_Health : MonoBehaviour, IDamageable
                 AudioSource.PlayClipAtPoint(stats.Archetype.deathSfx, transform.position);
 
             OnMonsterDefeated?.Invoke(stats.ExpReward, stats.GoldReward, stats.Archetype, transform.position);
+            respawn?.ScheduleRespawn();
             Destroy(gameObject);
         }
     }

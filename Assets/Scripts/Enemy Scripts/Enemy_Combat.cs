@@ -85,5 +85,8 @@ public class Enemy_Combat : MonoBehaviour, IEnemyBasicAttack
             IBurnable burnable = player.GetComponent<IBurnable>();
             burnable?.ApplyBurn(stats.Archetype.burnTickDamage, stats.Archetype.burnTickInterval, stats.Archetype.burnDuration);
         }
+
+        if (hit && stats.Archetype != null && stats.Archetype.hitVFX != null)
+            Instantiate(stats.Archetype.hitVFX, player.position + stats.Archetype.hitVFXOffset, Quaternion.identity);
     }
 }

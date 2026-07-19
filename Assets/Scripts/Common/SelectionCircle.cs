@@ -92,6 +92,13 @@ public class SelectionCircle : MonoBehaviour
 
     private Bounds GetCharacterBounds()
     {
+        // Prioridade: marcador dedicado (personagem com Collider2D principal
+        // que é gatilho de gameplay, não silhueta) > Collider2D genérico >
+        // sprite bounds.
+        SelectionBoundsSource boundsSource = GetComponentInChildren<SelectionBoundsSource>();
+        if (boundsSource != null)
+            return boundsSource.Bounds;
+
         Collider2D col = GetComponent<Collider2D>();
         return col != null ? col.bounds : sourceRenderer.bounds;
     }

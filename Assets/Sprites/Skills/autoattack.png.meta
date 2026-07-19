@@ -1,0 +1,429 @@
+fileFormatVersion: 2
+guid: 23c5c531a9e53654c976e83b7ea14646
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6221806071539442529
+    second: autoattack_0
+  - first:
+      213: -5449873611767037747
+    second: autoattack_1
+  - first:
+      213: 914341258002256944
+    second: autoattack_2
+  - first:
+      213: -726197964851550367
+    second: autoattack_3
+  - first:
+      213: -6489204608659252011
+    second: autoattack_4
+  - first:
+      213: -6331545639253784782
+    second: autoattack_5
+  - first:
+      213: -6268027197279660953
+    second: autoattack_6
+  - first:
+      213: -6340139953148607358
+    second: autoattack_7
+  - first:
+      213: 8553029659496652629
+    second: autoattack_8
+  - first:
+      213: 1029477228682150303
+    second: autoattack_9
+  - first:
+      213: -7493592973106030490
+    second: autoattack_10
+  - first:
+      213: 6992227672160613573
+    second: autoattack_11
+  - first:
+      213: 7848952624608355121
+    second: autoattack_12
+  - first:
+      213: 3695316210331739571
+    second: autoattack_13
+  - first:
+      213: 4840217316503812529
+    second: autoattack_14
+  - first:
+      213: 2724689356942009304
+    second: autoattack_15
+  - first:
+      213: 7689909577440812692
+    second: autoattack_16
+  - first:
+      213: -822211376894812212
+    second: autoattack_17
+  - first:
+      213: 4428363598104679255
+    second: autoattack_18
+  - first:
+      213: -6849676997096554866
+    second: autoattack_19
+  - first:
+      213: -6426241554253925233
+    second: autoattack_20
+  - first:
+      213: -3934029323753532707
+    second: autoattack_21
+  - first:
+      213: 4828350892027221799
+    second: autoattack_22
+  - first:
+      213: -8675213081946657781
+    second: autoattack_23
+  - first:
+      213: -5109575579617095034
+    second: autoattack_24
+  - first:
+      213: 803550109101294625
+    second: autoattack_25
+  - first:
+      213: -6376122977469862428
+    second: autoattack_26
+  - first:
+      213: 8159062665639295958
+    second: autoattack_27
+  - first:
+      213: -3219713763647410929
+    second: autoattack_28
+  - first:
+      213: -115386894974580064
+    second: autoattack_29
+  - first:
+      213: 2084484926190224145
+    second: autoattack_30
+  - first:
+      213: 6472463882676748925
+    second: autoattack_31
+  - first:
+      213: 1206189829286875569
+    second: autoattack_32
+  - first:
+      213: 3449408706941443318
+    second: autoattack_33
+  - first:
+      213: 6796421622831542445
+    second: autoattack_34
+  - first:
+      213: 3902021304820763050
+    second: autoattack_35
+  - first:
+      213: 4238587842611072707
+    second: autoattack_36
+  - first:
+      213: -4826167968482586335
+    second: autoattack_37
+  - first:
+      213: 6122786951775222281
+    second: autoattack_38
+  - first:
+      213: 3143914477335965715
+    second: autoattack_39
+  - first:
+      213: 298381668141835038
+    second: autoattack_40
+  - first:
+      213: 1535475450694223670
+    second: autoattack_41
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 64
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: autoattack_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f9cd58ca754b7a9a0800000000000000
+      internalID: -6221806071539442529
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: autoattack_1
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc0c9d323d82e54b0800000000000000
+      internalID: -5449873611767037747
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: autoattack_2
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 03455be978460bc00800000000000000
+      internalID: 914341258002256944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: autoattack_3
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 167696c6cc60ce5f0800000000000000
+      internalID: -726197964851550367
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: autoattack_4
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5dc990a2ac6b1f5a0800000000000000
+      internalID: -6489204608659252011
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: autoattack_5
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 237ca1d79c4d128a0800000000000000
+      internalID: -6331545639253784782
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: autoattack_6
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76498a7397e7309a0800000000000000
+      internalID: -6268027197279660953
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: autoattack_7
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 0
+        width: 80
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 284c05add4c4308a0800000000000000
+      internalID: -6340139953148607358
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 2779e11c59acf8d4da17f8eaaf6ee645
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":8.0,"y":1.0},"gridSpriteSize":{"x":80.0,"y":80.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      autoattack_0: -6221806071539442529
+      autoattack_1: -5449873611767037747
+      autoattack_2: 914341258002256944
+      autoattack_3: -726197964851550367
+      autoattack_4: -6489204608659252011
+      autoattack_5: -6331545639253784782
+      autoattack_6: -6268027197279660953
+      autoattack_7: -6340139953148607358
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -37,7 +37,7 @@ MonoBehaviour:
   resourceGenerated: 1
   resourceCost: 0
   manaCost: 0
-  hitVFX: {fileID: 0}
+  hitVFX: {fileID: 8059612105479719364, guid: 87dd59ed1ffc85248a1ae77bbc5a00d3, type: 3}
   hitVFXOffset: {x: 0, y: 0, z: 0}
   animationTrigger: AutoAttack
   maxCastDuration: 3

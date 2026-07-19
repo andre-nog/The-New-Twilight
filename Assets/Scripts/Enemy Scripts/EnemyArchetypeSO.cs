@@ -60,6 +60,11 @@ public class EnemyArchetypeSO : ScriptableObject
     [Tooltip("Tempo depois do dano até o inimigo voltar a poder se mover/perseguir.")]
     public float attackRecovery = 0.2f;
 
+    [Header("Visual Effects")]
+    [Tooltip("Prefab instanciado na posição do alvo quando o ataque básico acerta. Precisa ter um DestroyVFX (ou equivalente) pra se auto-destruir — ver Assets/Scripts/Skills/DestroyVFX.cs.")]
+    public GameObject hitVFX;
+    public Vector3 hitVFXOffset;
+
     [Header("Burn (opcional)")]
     [Tooltip("Se marcado, um ataque básico bem-sucedido deste inimigo aplica queimadura no alvo.")]
     public bool appliesBurn = false;

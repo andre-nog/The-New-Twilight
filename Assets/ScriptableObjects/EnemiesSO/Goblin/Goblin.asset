@@ -22,6 +22,12 @@ MonoBehaviour:
   attackCooldown: 2
   attackWindup: 0.45
   attackRecovery: 0.2
+  hitVFX: {fileID: 8059612105479719364, guid: 87dd59ed1ffc85248a1ae77bbc5a00d3, type: 3}
+  hitVFXOffset: {x: 0, y: 0, z: 0}
+  appliesBurn: 0
+  burnTickDamage: 5
+  burnTickInterval: 2
+  burnDuration: 6
   moveSpeed: 2
   returnSpeed: 2.3
   detectionRange: 5
